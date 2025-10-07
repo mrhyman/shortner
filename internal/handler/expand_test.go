@@ -1,25 +1,78 @@
 package handler_test
 
-import(
-	"github.com/mrhyman/shortner/internal/handler"
+import (
 	"net/http"
+	"net/http/httptest"
 	"testing"
+
+	"github.com/mrhyman/shortner/internal/handler"
+	"github.com/mrhyman/shortner/internal/repository"
 )
 
 func TestHandler_ExpandHandler(t *testing.T) {
-	tests := []struct {
-		name string // description of this test case
-		// Named input parameters for target function.
-		res http.ResponseWriter
-		req *http.Request
-	}{
-		// TODO: Add test cases.
+	type testCase struct {
+		name           string
+		path           string
+		setupStore     func(*repository.Store)
+		expectedStatus int
+		expectedHeader string
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// TODO: construct the receiver type.
-			var h handler.Handler
-			h.ExpandHandler(tt.res, tt.req)
+
+	cases := []testCase{
+		{
+			name: "Happy path",
+			path: "/abc123",
+			setupStore: func(s *repository.Store) {
+				s.Set("abc123", "https://example.com")
+			},
+			expectedStatus: http.StatusTemporaryRedirect,
+			expectedHeader: "https://example.com",
+		},
+		{
+			name:           "Empty id",
+			path:           "/",
+			setupStore:     func(s *repository.Store) {},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "Id not found",
+			path:           "/notfound",
+			setupStore:     func(s *repository.Store) {},
+			expectedStatus: http.StatusBadRequest,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			//arrange 
+			store := repository.NewStore()
+			tc.setupStore(store)
+
+			h := &handler.Handler{
+				Base:  "http://localhost:8080",
+				Store: store,
+			}
+
+			// act
+			req := httptest.NewRequest(http.MethodGet, tc.path, nil)
+			rec := httptest.NewRecorder()
+
+			h.ExpandHandler(rec, req)
+
+			res := rec.Result()
+			defer res.Body.Close()
+
+			// assert
+			if res.StatusCode != tc.expectedStatus {
+				t.Fatalf("[%s] expected %d, got %d", tc.name, tc.expectedStatus, res.StatusCode)
+			}
+
+			if tc.expectedHeader != "" {
+				location := res.Header.Get("Location")
+				if location != tc.expectedHeader {
+					t.Errorf("[%s] expected Location %q, got %q", tc.name, tc.expectedHeader, location)
+				}
+			}
 		})
 	}
 }
