@@ -1,11 +1,20 @@
 package handler
 
-type Store interface {
-	Set(id, original string)
-	Get(id string) (string, bool)
+import (
+	"context"
+
+	"github.com/mrhyman/shortner/internal/repository"
+)
+
+type HttpHandler struct {
+	Ctx  context.Context
+	Repo repository.URLRepository
 }
 
-type Handler struct {
-	Store Store
-	Base  string
+func New(
+	repo repository.URLRepository,
+) *HttpHandler {
+	return &HttpHandler{
+		Repo: repo,
+	}
 }

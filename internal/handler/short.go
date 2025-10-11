@@ -22,7 +22,7 @@ func generateShortID(n int) (string, error) {
 	return string(b), nil
 }
 
-func (h *Handler) ShortLinkHandler(res http.ResponseWriter, req *http.Request) {
+func (h *HttpHandler) ShortLinkHandler(res http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		http.Error(res, model.ErrInvalidRequestParams.Error(), http.StatusBadRequest)
 		return
@@ -51,9 +51,9 @@ func (h *Handler) ShortLinkHandler(res http.ResponseWriter, req *http.Request) {
 		http.Error(res, model.ErrInvalidRequestHeaders.Error(), http.StatusBadRequest)
 		return
 	}
-	h.Store.Set(id, originalURL)
+	h.Repo.Store(h.Ctx, id, originalURL)
 
-	shortURL := fmt.Sprintf("%s/%s", h.Base, id)
+	shortURL := fmt.Sprintf("http://localhost:8080/%s", id)
 
 	res.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	res.WriteHeader(http.StatusCreated)

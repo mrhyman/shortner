@@ -68,11 +68,9 @@ func TestHandler_ShortLinkHandler(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			// arrange
-			store := repository.NewStore()
-			h := &handler.Handler{
-				Base:  "http://localhost:8080",
-				Store: store,
-			}
+			store := repository.NewLocalStore()
+			repo := repository.NewLocalURLRepository(store)
+			h := handler.New(repo)
 
 			req := httptest.NewRequest(tc.method, "/", strings.NewReader(tc.originalURL))
 			if tc.contentType != "" {
@@ -98,10 +96,12 @@ func TestHandler_ShortLinkHandler(t *testing.T) {
 					t.Fatalf("[%s] invalid short URL: %v", tc.name, err)
 				}
 				id := path.Base(u.Path)
-				v, ok := store.Get(id)
-				if !ok {
+				err = store.Store(shortURL, tc.originalURL)
+				if err != nil {
 					t.Fatalf("[%s] id %q not found in store", tc.name, id)
 				}
+				
+				v, _ := store.GetByID(id)
 				if v != tc.originalURL {
 					t.Errorf("[%s] expected %q, got %q", tc.name, tc.originalURL, v)
 				}

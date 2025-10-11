@@ -5,15 +5,15 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/mrhyman/shortner/internal/handler"
 	"github.com/mrhyman/shortner/internal/repository"
+	"github.com/mrhyman/shortner/internal/handler"
 )
 
 func TestHandler_ExpandHandler(t *testing.T) {
 	type testCase struct {
 		name           string
 		path           string
-		setupStore     func(*repository.Store)
+		setupStore     func(*repository.LocalStore)
 		expectedStatus int
 		expectedHeader string
 	}
@@ -22,8 +22,8 @@ func TestHandler_ExpandHandler(t *testing.T) {
 		{
 			name: "Happy path",
 			path: "/abc123",
-			setupStore: func(s *repository.Store) {
-				s.Set("abc123", "https://example.com")
+			setupStore: func(s *repository.LocalStore) {
+				s.Store("abc123", "https://example.com")
 			},
 			expectedStatus: http.StatusTemporaryRedirect,
 			expectedHeader: "https://example.com",
@@ -31,27 +31,24 @@ func TestHandler_ExpandHandler(t *testing.T) {
 		{
 			name:           "Empty id",
 			path:           "/",
-			setupStore:     func(s *repository.Store) {},
+			setupStore:     func(s *repository.LocalStore) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "Id not found",
 			path:           "/notfound",
-			setupStore:     func(s *repository.Store) {},
+			setupStore:     func(s *repository.LocalStore) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			//arrange 
-			store := repository.NewStore()
+			//arrange
+			store := repository.NewLocalStore()
+			repo := repository.NewLocalURLRepository(store)
+			h := handler.New(repo)
 			tc.setupStore(store)
-
-			h := &handler.Handler{
-				Base:  "http://localhost:8080",
-				Store: store,
-			}
 
 			// act
 			req := httptest.NewRequest(http.MethodGet, tc.path, nil)
