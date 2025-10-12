@@ -18,6 +18,8 @@ func TestHandler_ExpandHandler(t *testing.T) {
 		expectedHeader string
 	}
 
+	baseURL:= "localhost:8080"
+
 	cases := []testCase{
 		{
 			name: "Happy path",
@@ -47,7 +49,7 @@ func TestHandler_ExpandHandler(t *testing.T) {
 			//arrange
 			store := repository.NewLocalStore()
 			repo := repository.NewLocalURLRepository(store)
-			h := handler.New(repo)
+			h := handler.New(baseURL, repo)
 			tc.setupStore(store)
 
 			// act

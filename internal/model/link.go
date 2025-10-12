@@ -7,27 +7,27 @@ import (
 )
 
 type Link struct {
-	Id        uuid.UUID
-	Url       string
-	ShortUrl  string
+	ID        uuid.UUID
+	URL       string
+	ShortURL  string
 	Name      string
 	CreatedAt time.Time
 }
 
 func NewLink(
-	linkId uuid.UUID, url string, shortUrl string, name string, createdAt time.Time,
+	linkID uuid.UUID, url string, shortURL string, name string, createdAt time.Time,
 ) (*Link, error) {
 	created := createdAt.UTC()
-	if uuid.Nil == linkId {
-		return nil, ErrInvalidLinkId
+	if uuid.Nil == linkID {
+		return nil, ErrInvalidLinkID
 	}
 
 	if url == "" {
-		return nil, ErrInvalidUrl
+		return nil, ErrInvalidURL
 	}
 
-	if shortUrl == "" {
-		return nil, ErrInvalidUrl
+	if shortURL == "" {
+		return nil, ErrInvalidURL
 	}
 
 	if name == "" {
@@ -39,9 +39,9 @@ func NewLink(
 	}
 
 	link := &Link{
-		Id:        linkId,
-		Url:       url,
-		ShortUrl:  shortUrl,
+		ID:        linkID,
+		URL:       url,
+		ShortURL:  shortURL,
 		Name:      name,
 		CreatedAt: created,
 	}

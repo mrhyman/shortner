@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/mrhyman/shortner/internal/model"
 )
 
+// TODO: refactor while sprint 4
 func generateShortID(n int) (string, error) {
 	const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	b := make([]byte, n)
@@ -22,7 +24,7 @@ func generateShortID(n int) (string, error) {
 	return string(b), nil
 }
 
-func (h *HttpHandler) ShortLinkHandler(res http.ResponseWriter, req *http.Request) {
+func (h *HTTPHandler) ShortLinkHandler(res http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		http.Error(res, model.ErrInvalidRequestParams.Error(), http.StatusBadRequest)
 		return
@@ -36,13 +38,13 @@ func (h *HttpHandler) ShortLinkHandler(res http.ResponseWriter, req *http.Reques
 
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
-		http.Error(res, model.ErrInvalidUrl.Error(), http.StatusBadRequest)
+		http.Error(res, model.ErrInvalidURL.Error(), http.StatusBadRequest)
 		return
 	}
-	
+
 	originalURL := strings.TrimSpace(string(body))
 	if originalURL == "" {
-		http.Error(res, model.ErrInvalidUrl.Error(), http.StatusBadRequest)
+		http.Error(res, model.ErrInvalidURL.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -51,9 +53,11 @@ func (h *HttpHandler) ShortLinkHandler(res http.ResponseWriter, req *http.Reques
 		http.Error(res, model.ErrInvalidRequestHeaders.Error(), http.StatusBadRequest)
 		return
 	}
-	h.Repo.Store(h.Ctx, id, originalURL)
+	h.Repo.Store(req.Context(), id, originalURL)
 
-	shortURL := fmt.Sprintf("http://localhost:8080/%s", id)
+	base, _ := url.Parse(h.BaseShortURL) 
+	short, _ := url.Parse(id)
+	shortURL := base.ResolveReference(short).String()
 
 	res.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	res.WriteHeader(http.StatusCreated)

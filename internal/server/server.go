@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
@@ -19,12 +18,11 @@ type Server struct {
 	Ctx      context.Context
 }
 
-func New(port string, h handler.HttpHandler) *Server {
-	baseUrl := fmt.Sprintf(`localhost:%s`, port)
+func New(baseURL string, h handler.HTTPHandler) *Server {
 	return &Server{
 		Ctx: context.Background(),
 		Instance: &http.Server{
-			Addr:    baseUrl,
+			Addr:    baseURL,
 			Handler: SetupMux(&h),
 		},
 	}
@@ -39,7 +37,7 @@ func (s *Server) Start() {
 
 }
 
-func SetupMux(h *handler.HttpHandler) http.Handler {
+func SetupMux(h *handler.HTTPHandler) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)

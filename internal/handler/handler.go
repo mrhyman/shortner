@@ -1,20 +1,21 @@
 package handler
 
 import (
-	"context"
-
 	"github.com/mrhyman/shortner/internal/repository"
 )
 
-type HttpHandler struct {
-	Ctx  context.Context
-	Repo repository.URLRepository
+type HTTPHandler struct {
+	BaseShortURL string
+	Repo         repository.URLRepository
 }
 
 func New(
+	baseShortURL string,
 	repo repository.URLRepository,
-) *HttpHandler {
-	return &HttpHandler{
-		Repo: repo,
+
+) *HTTPHandler {
+	return &HTTPHandler{
+		BaseShortURL: baseShortURL,
+		Repo:         repo,
 	}
 }

@@ -25,6 +25,8 @@ func TestHandler_ShortLinkHandler(t *testing.T) {
 		expectInStore  bool
 	}
 
+	baseURL:= "localhost:8080"
+
 	cases := []testCase{
 		{
 			name:           "Happy path",
@@ -70,7 +72,7 @@ func TestHandler_ShortLinkHandler(t *testing.T) {
 			// arrange
 			store := repository.NewLocalStore()
 			repo := repository.NewLocalURLRepository(store)
-			h := handler.New(repo)
+			h := handler.New(baseURL, repo)
 
 			req := httptest.NewRequest(tc.method, "/", strings.NewReader(tc.originalURL))
 			if tc.contentType != "" {

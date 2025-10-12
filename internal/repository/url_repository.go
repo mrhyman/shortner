@@ -6,7 +6,7 @@ import (
 
 type URLRepository interface {
 	GetByID(ctx context.Context, id string) (string, error)
-	Store(ctx context.Context, url string, originalUrl string) error
+	Store(ctx context.Context, url string, originalURL string) error
 }
 
 type LocalURLRepository struct {
@@ -22,6 +22,6 @@ func (r *LocalURLRepository) GetByID(ctx context.Context, id string) (string, er
 	return r.store.GetByID(id)
 }
 
-func (r *LocalURLRepository) Store(ctx context.Context, url string, originalUrl string) error {
-	return r.store.Store(url, originalUrl)
+func (r *LocalURLRepository) Store(ctx context.Context, url string, originalURL string) error {
+	return r.store.Store(url, originalURL)
 }
