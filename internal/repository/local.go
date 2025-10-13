@@ -7,7 +7,7 @@ import (
 )
 
 type LocalStore struct {
-	mu  sync.Mutex
+	mu  sync.RWMutex
 	url map[string]string
 }
 

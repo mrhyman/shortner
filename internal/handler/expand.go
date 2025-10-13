@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
@@ -8,15 +9,23 @@ import (
 )
 
 func (h *HTTPHandler) ExpandHandler(res http.ResponseWriter, req *http.Request) {
-	id := strings.TrimPrefix(req.URL.Path, "/")
-	if id == "" {
-		http.Error(res, model.ErrInvalidLinkID.Error(), http.StatusBadRequest)
+	if req.Method != http.MethodGet {
+		http.Error(res, model.ErrInvalidRequestParams.Error(), http.StatusMethodNotAllowed)
 		return
 	}
 
-	originalURL, err := h.Repo.GetByID(req.Context(), id)
+	id := strings.TrimPrefix(req.URL.Path, "/")
+
+	originalURL, err := h.svc.Expand(req.Context(), id)
 	if err != nil {
-		http.Error(res, err.Error(), http.StatusBadRequest)
+		switch {
+		case errors.Is(err, model.ErrInvalidLinkID):
+			http.Error(res, err.Error(), http.StatusBadRequest)
+		case errors.Is(err, model.ErrNotFound):
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+		default:
+			http.Error(res, model.ErrWentWrong.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 

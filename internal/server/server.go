@@ -15,12 +15,10 @@ import (
 
 type Server struct {
 	Instance *http.Server
-	Ctx      context.Context
 }
 
 func New(baseURL string, h handler.HTTPHandler) *Server {
 	return &Server{
-		Ctx: context.Background(),
 		Instance: &http.Server{
 			Addr:    baseURL,
 			Handler: SetupMux(&h),
@@ -28,13 +26,12 @@ func New(baseURL string, h handler.HTTPHandler) *Server {
 	}
 }
 
-func (s *Server) Start() {
+func (s *Server) Start(ctx context.Context) {
 	log.Printf("listening on %s", s.Instance.Addr)
 	if err := s.Instance.ListenAndServe(); err != nil {
-		slog.ErrorContext(s.Ctx, "server start error", slog.String("err", err.Error()))
+		slog.ErrorContext(ctx, "server start error", slog.String("err", err.Error()))
 		os.Exit(1)
 	}
-
 }
 
 func SetupMux(h *handler.HTTPHandler) http.Handler {

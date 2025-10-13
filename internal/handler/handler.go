@@ -1,21 +1,19 @@
 package handler
 
 import (
-	"github.com/mrhyman/shortner/internal/repository"
+	"github.com/mrhyman/shortner/internal/service"
 )
 
 type HTTPHandler struct {
-	BaseShortURL string
-	Repo         repository.URLRepository
+	svc service.URLService
 }
 
 func New(
-	baseShortURL string,
-	repo repository.URLRepository,
+	svc service.URLService,
 
 ) *HTTPHandler {
 	return &HTTPHandler{
-		BaseShortURL: baseShortURL,
-		Repo:         repo,
+
+		svc: svc,
 	}
 }

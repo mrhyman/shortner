@@ -13,6 +13,7 @@ import (
 
 	"github.com/mrhyman/shortner/internal/handler"
 	"github.com/mrhyman/shortner/internal/repository"
+	"github.com/mrhyman/shortner/internal/service"
 )
 
 func TestHandler_ShortLinkHandler(t *testing.T) {
@@ -41,7 +42,7 @@ func TestHandler_ShortLinkHandler(t *testing.T) {
 			method:         http.MethodGet,
 			contentType:    "text/plain",
 			originalURL:    faker.URL(),
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusMethodNotAllowed,
 		},
 		{
 			name:           "Invalid content type",
@@ -72,7 +73,8 @@ func TestHandler_ShortLinkHandler(t *testing.T) {
 			// arrange
 			store := repository.NewLocalStore()
 			repo := repository.NewLocalURLRepository(store)
-			h := handler.New(baseURL, repo)
+			svc := service.NewURLService(baseURL, repo)
+			h := handler.New(*svc)
 
 			req := httptest.NewRequest(tc.method, "/", strings.NewReader(tc.originalURL))
 			if tc.contentType != "" {

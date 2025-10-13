@@ -5,8 +5,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/mrhyman/shortner/internal/repository"
 	"github.com/mrhyman/shortner/internal/handler"
+	"github.com/mrhyman/shortner/internal/repository"
+	"github.com/mrhyman/shortner/internal/service"
 )
 
 func TestHandler_ExpandHandler(t *testing.T) {
@@ -40,7 +41,7 @@ func TestHandler_ExpandHandler(t *testing.T) {
 			name:           "Id not found",
 			path:           "/notfound",
 			setupStore:     func(s *repository.LocalStore) {},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusInternalServerError,
 		},
 	}
 
@@ -49,7 +50,8 @@ func TestHandler_ExpandHandler(t *testing.T) {
 			//arrange
 			store := repository.NewLocalStore()
 			repo := repository.NewLocalURLRepository(store)
-			h := handler.New(baseURL, repo)
+			svc := service.NewURLService(baseURL, repo)
+			h := handler.New(*svc)
 			tc.setupStore(store)
 
 			// act

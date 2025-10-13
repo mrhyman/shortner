@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 
+	"github.com/mrhyman/shortner/internal/config"
 	"github.com/mrhyman/shortner/internal/handler"
 	"github.com/mrhyman/shortner/internal/repository"
 	"github.com/mrhyman/shortner/internal/server"
-	"github.com/mrhyman/shortner/internal/config"
+	"github.com/mrhyman/shortner/internal/service"
 )
 
 var cfg config.AppConfig
@@ -20,8 +22,9 @@ func init() {
 func main() {
 	store := repository.NewLocalStore()
 	repo := repository.NewLocalURLRepository(store)
-	h := handler.New(cfg.BaseShortURL, repo)
+	svc := service.NewURLService(cfg.BaseShortURL, repo)
+	h := handler.New(*svc)
 	s := server.New(cfg.BaseURL, *h)
 
-	s.Start()
+	s.Start(context.Background())
 }

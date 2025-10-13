@@ -1,32 +1,18 @@
 package handler
 
 import (
-	"crypto/rand"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/mrhyman/shortner/internal/model"
 )
 
-// TODO: refactor while sprint 4
-func generateShortID(n int) (string, error) {
-	const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	b := make([]byte, n)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-	for i := range b {
-		b[i] = alphabet[int(b[i])%len(alphabet)]
-	}
-	return string(b), nil
-}
-
 func (h *HTTPHandler) ShortLinkHandler(res http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
-		http.Error(res, model.ErrInvalidRequestParams.Error(), http.StatusBadRequest)
+		http.Error(res, model.ErrInvalidRequestParams.Error(), http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -43,21 +29,19 @@ func (h *HTTPHandler) ShortLinkHandler(res http.ResponseWriter, req *http.Reques
 	}
 
 	originalURL := strings.TrimSpace(string(body))
-	if originalURL == "" {
-		http.Error(res, model.ErrInvalidURL.Error(), http.StatusBadRequest)
-		return
-	}
 
-	id, err := generateShortID(8)
+	shortURL, err := h.svc.Shorten(req.Context(), originalURL)
 	if err != nil {
-		http.Error(res, model.ErrInvalidRequestHeaders.Error(), http.StatusBadRequest)
+		switch {
+		case errors.Is(err, model.ErrInvalidURL):
+			http.Error(res, err.Error(), http.StatusBadRequest)
+		case errors.Is(err, model.ErrShortLinkGeneration) || errors.Is(err, model.ErrShortenError):
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+		default:
+			http.Error(res, model.ErrWentWrong.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
-	h.Repo.Store(req.Context(), id, originalURL)
-
-	base, _ := url.Parse(h.BaseShortURL) 
-	short, _ := url.Parse(id)
-	shortURL := base.ResolveReference(short).String()
 
 	res.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	res.WriteHeader(http.StatusCreated)
