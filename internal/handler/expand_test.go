@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/mrhyman/shortner/internal/config"
 	"github.com/mrhyman/shortner/internal/handler"
 	"github.com/mrhyman/shortner/internal/repository"
 	"github.com/mrhyman/shortner/internal/service"
@@ -18,8 +19,6 @@ func TestHandler_ExpandHandler(t *testing.T) {
 		expectedStatus int
 		expectedHeader string
 	}
-
-	baseURL:= "localhost:8080"
 
 	cases := []testCase{
 		{
@@ -50,7 +49,7 @@ func TestHandler_ExpandHandler(t *testing.T) {
 			//arrange
 			store := repository.NewLocalStore()
 			repo := repository.NewLocalURLRepository(store)
-			svc := service.NewURLService(baseURL, repo)
+			svc := service.NewURLService(config.DefaultBaseURL, repo)
 			h := handler.New(*svc)
 			tc.setupStore(store)
 

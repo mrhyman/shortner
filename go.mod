@@ -1,6 +1,6 @@
 module github.com/mrhyman/shortner
 
-go 1.24.8
+go 1.24.9
 
 require github.com/google/uuid v1.6.0
 
@@ -9,4 +9,7 @@ require (
 	github.com/go-chi/chi/v5 v5.2.3
 )
 
-require golang.org/x/text v0.3.7 // indirect
+require (
+	github.com/caarlos0/env/v11 v11.3.1
+	golang.org/x/text v0.3.7 // indirect
+)
