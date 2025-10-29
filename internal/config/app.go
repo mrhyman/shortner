@@ -3,9 +3,9 @@ package config
 import (
 	"context"
 	"flag"
-	"log/slog"
 
 	"github.com/caarlos0/env/v11"
+	"github.com/mrhyman/shortner/internal/logger"
 	"github.com/mrhyman/shortner/internal/model"
 )
 
@@ -19,7 +19,7 @@ type AppConfig struct {
 	BaseURL       string `env:"BASE_URL"`
 }
 
-func Load() AppConfig {
+func Load(ctx context.Context) AppConfig {
 	var cfg AppConfig
 
 	serverFlag := flag.String("a", DefaultServerAddress, "HTTP server address, e.g. localhost:8888")
@@ -27,7 +27,7 @@ func Load() AppConfig {
 	flag.Parse()
 
 	if err := env.Parse(&cfg); err != nil {
-		slog.ErrorContext(context.Background(), model.ErrEnvParsing.Error(), slog.String("err", err.Error()))
+		logger.FromContext(ctx).With("err", model.ErrEnvParsing.Error(), "trace", err.Error())
 	}
 
 	if cfg.ServerAddress == "" {

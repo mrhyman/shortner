@@ -67,7 +67,7 @@ func TestSetup_ConfigPriorities(t *testing.T) {
 
 			// act
 			os.Args = tt.args
-			cfg := config.Load()
+			cfg := config.Load(t.Context())
 
 			// assert
 			if cfg.ServerAddress != tt.wantAddress {

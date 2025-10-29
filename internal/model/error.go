@@ -14,5 +14,6 @@ var (
 	ErrInvalidRequestParams  = errors.New("ivalid request params")
 	ErrInvalidRequestHeaders = errors.New("ivalid request headers")
 	ErrWentWrong             = errors.New("something went wrong")
-	ErrEnvParsing             = errors.New("parsing .env error")
+	ErrEnvParsing            = errors.New("parsing .env error")
+	ErrLoggerSetup           = errors.New("logger setup error")
 )

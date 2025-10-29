@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/mrhyman/shortner/internal/logger"
 	"github.com/mrhyman/shortner/internal/model"
 )
 
@@ -46,4 +47,5 @@ func (h *HTTPHandler) ShortLinkHandler(res http.ResponseWriter, req *http.Reques
 	res.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	res.WriteHeader(http.StatusCreated)
 	fmt.Fprint(res, shortURL)
+	logger.FromContext(req.Context()).With()
 }
