@@ -11,6 +11,7 @@ import (
 
 	"github.com/bxcodec/faker/v4"
 
+	"github.com/mrhyman/shortner/internal/config"
 	"github.com/mrhyman/shortner/internal/handler"
 	"github.com/mrhyman/shortner/internal/repository"
 	"github.com/mrhyman/shortner/internal/service"
@@ -26,7 +27,7 @@ func TestHandler_ShortLinkHandler(t *testing.T) {
 		expectInStore  bool
 	}
 
-	baseURL:= "localhost:8080"
+	baseURL:= config.DefaultBaseURL
 
 	cases := []testCase{
 		{

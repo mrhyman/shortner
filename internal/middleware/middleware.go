@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/mrhyman/shortner/internal/logger"
 )
 
@@ -14,6 +15,9 @@ type responseWriter struct {
 }
 
 func (rw *responseWriter) WriteHeader(statusCode int) {
+	if rw.status != 0 {
+		return
+	}
 	rw.status = statusCode
 	rw.ResponseWriter.WriteHeader(statusCode)
 }
@@ -31,7 +35,10 @@ func WithLogging(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
-		uri := r.RequestURI
+		routePattern := chi.RouteContext(r.Context()).RoutePattern()
+		if routePattern == "" {
+			routePattern = r.URL.Path
+		}
 		method := r.Method
 
 		rw := &responseWriter{ResponseWriter: w}
@@ -42,7 +49,7 @@ func WithLogging(next http.HandlerFunc) http.HandlerFunc {
 
 
 		logger.FromContext(r.Context()).With(
-			"uri", uri,
+			"uri", routePattern,
 			"method", method,
 			"status", rw.status,
 			"size", rw.size,

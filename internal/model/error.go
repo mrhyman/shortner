@@ -16,4 +16,5 @@ var (
 	ErrWentWrong             = errors.New("something went wrong")
 	ErrEnvParsing            = errors.New("parsing .env error")
 	ErrLoggerSetup           = errors.New("logger setup error")
+	ErrResponseEncoding      = errors.New("logger setup error")
 )
