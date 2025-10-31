@@ -35,9 +35,9 @@ func (s *Server) Start(ctx context.Context) {
 func SetupMux(h *handler.HTTPHandler) http.Handler {
 	r := chi.NewRouter()
 
-	r.Post("/", middleware.WithLogging(h.ShortLinkHandler))
-	r.Get("/{id}", middleware.WithLogging(h.ExpandHandler))
-	r.Post("/api/shorten", middleware.WithLogging(h.ShortenHandler))
+	r.Post("/", middleware.WithLogging(middleware.WithGzip(h.ShortLinkHandler)))
+	r.Get("/{id}", middleware.WithLogging(middleware.WithGzip(h.ExpandHandler)))
+	r.Post("/api/shorten", middleware.WithLogging(middleware.WithGzip(h.ShortenHandler)))
 
 	return r
 }

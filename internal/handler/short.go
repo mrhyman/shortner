@@ -22,7 +22,7 @@ func (h *HTTPHandler) ShortLinkHandler(res http.ResponseWriter, req *http.Reques
 
 	contentType := req.Header.Get("Content-Type")
 	if contentType != "" && !strings.HasPrefix(contentType, "text/plain") {
-		log.With("err", model.ErrInvalidRequestParams.Error())
+		log.With("err", model.ErrInvalidRequestHeaders.Error())
 		http.Error(res, model.ErrInvalidRequestHeaders.Error(), http.StatusBadRequest)
 		return
 	}
