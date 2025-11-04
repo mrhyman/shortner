@@ -15,21 +15,21 @@ func (h *HTTPHandler) ShortLinkHandler(res http.ResponseWriter, req *http.Reques
 	log := logger.FromContext(req.Context())
 
 	if req.Method != http.MethodPost {
-		log.With("err", model.ErrInvalidRequestParams.Error())
+		log.With("err", model.ErrInvalidRequestParams.Error()).Warn()
 		http.Error(res, model.ErrInvalidRequestParams.Error(), http.StatusMethodNotAllowed)
 		return
 	}
 
 	contentType := req.Header.Get("Content-Type")
 	if contentType != "" && !strings.HasPrefix(contentType, "text/plain") {
-		log.With("err", model.ErrInvalidRequestHeaders.Error())
+		log.With("err", model.ErrInvalidRequestHeaders.Error()).Warn()
 		http.Error(res, model.ErrInvalidRequestHeaders.Error(), http.StatusBadRequest)
 		return
 	}
 
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
-		log.With("err", model.ErrInvalidURL.Error(), "trace", err.Error())
+		log.With("err", model.ErrInvalidURL.Error()).Warn()
 		http.Error(res, model.ErrInvalidURL.Error(), http.StatusBadRequest)
 		return
 	}
@@ -38,13 +38,15 @@ func (h *HTTPHandler) ShortLinkHandler(res http.ResponseWriter, req *http.Reques
 
 	shortURL, err := h.svc.Shorten(req.Context(), originalURL)
 	if err != nil {
-		log.With("err", model.ErrEnvParsing.Error(), "trace", err.Error())
 		switch {
 		case errors.Is(err, model.ErrInvalidURL):
+			log.With("err", err.Error()).Warn()
 			http.Error(res, err.Error(), http.StatusBadRequest)
 		case errors.Is(err, model.ErrShortLinkGeneration) || errors.Is(err, model.ErrShortenError):
+			log.With("err", err.Error()).Error()
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 		default:
+			log.With("err", err.Error()).Error()
 			http.Error(res, model.ErrWentWrong.Error(), http.StatusInternalServerError)
 		}
 		return

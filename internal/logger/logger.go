@@ -7,6 +7,7 @@ import (
 
 	"github.com/mrhyman/shortner/internal/model"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type ctxKey struct{}
@@ -29,4 +30,8 @@ func New() *zap.SugaredLogger {
 	}
 
 	return logger.Sugar()
+}
+
+func NewWithCore(core zapcore.Core) *zap.SugaredLogger {
+	return zap.New(core).Sugar()
 }

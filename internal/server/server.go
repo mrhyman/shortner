@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"net/http"
-	"os"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mrhyman/shortner/internal/handler"
@@ -27,8 +26,7 @@ func New(baseURL string, h handler.HTTPHandler) *Server {
 func (s *Server) Start(ctx context.Context) {
 	logger.FromContext(ctx).Infof("listening on %s", s.Instance.Addr)
 	if err := s.Instance.ListenAndServe(); err != nil {
-		logger.FromContext(ctx).With("trace", err.Error())
-		os.Exit(1)
+		logger.FromContext(ctx).With("err", err.Error()).Fatal()
 	}
 }
 

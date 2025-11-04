@@ -18,4 +18,5 @@ var (
 	ErrLoggerSetup           = errors.New("logger setup error")
 	ErrResponseEncoding      = errors.New("response encoding error")
 	ErrCompressReading       = errors.New("compress reading error")
+	ErrStorageInit           = errors.New("storage init error")
 )

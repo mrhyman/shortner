@@ -13,6 +13,7 @@ import (
 	"github.com/mrhyman/shortner/internal/handler"
 	"github.com/mrhyman/shortner/internal/model"
 	"github.com/mrhyman/shortner/internal/repository"
+	"github.com/mrhyman/shortner/internal/repository/storage"
 	"github.com/mrhyman/shortner/internal/service"
 )
 
@@ -61,8 +62,8 @@ func TestShortenHandler(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			// arrange
-			store := repository.NewLocalStore()
-			repo := repository.NewLocalURLRepository(store)
+			store := storage.NewMemoryStorage()
+			repo := repository.NewURLRepository(store)
 			svc := service.NewURLService(baseURL, repo)
 			h := handler.New(*svc)
 

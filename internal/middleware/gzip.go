@@ -93,7 +93,7 @@ func WithGzip(next http.HandlerFunc) http.HandlerFunc {
 		if sendsGzip {
 			cr, err := newCompressReader(req.Context(), req.Body)
 			if err != nil {
-				log.With("err", model.ErrCompressReading.Error(), "trace", err.Error())
+				log.With("err", model.ErrCompressReading.Error()).Error()
 				res.WriteHeader(http.StatusInternalServerError)
 				fmt.Fprint(res, model.ErrCompressReading.Error())
 				return

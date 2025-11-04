@@ -14,6 +14,7 @@ import (
 	"github.com/mrhyman/shortner/internal/config"
 	"github.com/mrhyman/shortner/internal/handler"
 	"github.com/mrhyman/shortner/internal/repository"
+	"github.com/mrhyman/shortner/internal/repository/storage"
 	"github.com/mrhyman/shortner/internal/service"
 )
 
@@ -27,7 +28,7 @@ func TestHandler_ShortLinkHandler(t *testing.T) {
 		expectInStore  bool
 	}
 
-	baseURL:= config.DefaultBaseURL
+	baseURL := config.DefaultBaseURL
 
 	cases := []testCase{
 		{
@@ -72,8 +73,8 @@ func TestHandler_ShortLinkHandler(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			// arrange
-			store := repository.NewLocalStore()
-			repo := repository.NewLocalURLRepository(store)
+			store := storage.NewMemoryStorage()
+			repo := repository.NewURLRepository(store)
 			svc := service.NewURLService(baseURL, repo)
 			h := handler.New(*svc)
 
@@ -105,7 +106,7 @@ func TestHandler_ShortLinkHandler(t *testing.T) {
 				if err != nil {
 					t.Fatalf("[%s] id %q not found in store", tc.name, id)
 				}
-				
+
 				v, _ := store.GetByID(id)
 				if v != tc.originalURL {
 					t.Errorf("[%s] expected %q, got %q", tc.name, tc.originalURL, v)

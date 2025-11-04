@@ -22,3 +22,6 @@ vendor/
 .idea
 .vscode
 .env
+
+# Local file storage
+.storage/

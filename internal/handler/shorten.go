@@ -14,7 +14,7 @@ func (h *HTTPHandler) ShortenHandler(res http.ResponseWriter, req *http.Request)
 	log := logger.FromContext(req.Context())
 
 	if req.Method != http.MethodPost {
-		log.With("err", model.ErrInvalidRequestParams.Error())
+		log.With("err", model.ErrInvalidRequestParams.Error()).Warn()
 		http.Error(res, model.ErrInvalidRequestParams.Error(), http.StatusMethodNotAllowed)
 		return
 	}
@@ -22,20 +22,22 @@ func (h *HTTPHandler) ShortenHandler(res http.ResponseWriter, req *http.Request)
 	var r api.ShortenRequest
 	dec := json.NewDecoder(req.Body)
 	if err := dec.Decode(&r); err != nil {
-		log.With("err", model.ErrInvalidRequestParams.Error(), "trace", err.Error())
+		log.With("err", model.ErrInvalidRequestParams.Error()).Error()
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	shortURL, err := h.svc.Shorten(req.Context(), r.URL)
 	if err != nil {
-		log.With("err", model.ErrEnvParsing.Error(), "trace", err.Error())
 		switch {
 		case errors.Is(err, model.ErrInvalidURL):
+			log.With("err", model.ErrEnvParsing.Error()).Warn()
 			http.Error(res, err.Error(), http.StatusBadRequest)
 		case errors.Is(err, model.ErrShortLinkGeneration) || errors.Is(err, model.ErrShortenError):
+			log.With("err", model.ErrEnvParsing.Error()).Error()
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 		default:
+			log.With("err", model.ErrEnvParsing.Error()).Error()
 			http.Error(res, model.ErrWentWrong.Error(), http.StatusInternalServerError)
 		}
 		return

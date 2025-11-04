@@ -8,6 +8,7 @@ import (
 	"github.com/mrhyman/shortner/internal/config"
 	"github.com/mrhyman/shortner/internal/handler"
 	"github.com/mrhyman/shortner/internal/repository"
+	"github.com/mrhyman/shortner/internal/repository/storage"
 	"github.com/mrhyman/shortner/internal/service"
 )
 
@@ -15,7 +16,7 @@ func TestHandler_ExpandHandler(t *testing.T) {
 	type testCase struct {
 		name           string
 		path           string
-		setupStore     func(*repository.LocalStore)
+		setupStore     func(*storage.MemoryStorage)
 		expectedStatus int
 		expectedHeader string
 	}
@@ -24,7 +25,7 @@ func TestHandler_ExpandHandler(t *testing.T) {
 		{
 			name: "Happy path",
 			path: "/abc123",
-			setupStore: func(s *repository.LocalStore) {
+			setupStore: func(s *storage.MemoryStorage) {
 				s.Store("abc123", "https://example.com")
 			},
 			expectedStatus: http.StatusTemporaryRedirect,
@@ -33,13 +34,13 @@ func TestHandler_ExpandHandler(t *testing.T) {
 		{
 			name:           "Empty id",
 			path:           "/",
-			setupStore:     func(s *repository.LocalStore) {},
+			setupStore:     func(s *storage.MemoryStorage) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "Id not found",
 			path:           "/notfound",
-			setupStore:     func(s *repository.LocalStore) {},
+			setupStore:     func(s *storage.MemoryStorage) {},
 			expectedStatus: http.StatusInternalServerError,
 		},
 	}
@@ -47,8 +48,8 @@ func TestHandler_ExpandHandler(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			//arrange
-			store := repository.NewLocalStore()
-			repo := repository.NewLocalURLRepository(store)
+			store := storage.NewMemoryStorage()
+			repo := repository.NewURLRepository(store)
 			svc := service.NewURLService(config.DefaultBaseURL, repo)
 			h := handler.New(*svc)
 			tc.setupStore(store)
