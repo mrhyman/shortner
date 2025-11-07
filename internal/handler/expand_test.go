@@ -5,8 +5,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/google/uuid"
+	"github.com/mrhyman/shortner/internal/config"
 	"github.com/mrhyman/shortner/internal/handler"
+	"github.com/mrhyman/shortner/internal/model"
 	"github.com/mrhyman/shortner/internal/repository"
+	"github.com/mrhyman/shortner/internal/repository/storage"
 	"github.com/mrhyman/shortner/internal/service"
 )
 
@@ -14,19 +18,21 @@ func TestHandler_ExpandHandler(t *testing.T) {
 	type testCase struct {
 		name           string
 		path           string
-		setupStore     func(*repository.LocalStore)
+		setupStore     func(*storage.MemoryStorage)
 		expectedStatus int
 		expectedHeader string
 	}
-
-	baseURL:= "localhost:8080"
 
 	cases := []testCase{
 		{
 			name: "Happy path",
 			path: "/abc123",
-			setupStore: func(s *repository.LocalStore) {
-				s.Store("abc123", "https://example.com")
+			setupStore: func(s *storage.MemoryStorage) {
+				s.Store(model.Link{
+					UUID: uuid.New(),
+					ShortURL: "abc123",
+					OriginalURL: "https://example.com",
+				})
 			},
 			expectedStatus: http.StatusTemporaryRedirect,
 			expectedHeader: "https://example.com",
@@ -34,13 +40,13 @@ func TestHandler_ExpandHandler(t *testing.T) {
 		{
 			name:           "Empty id",
 			path:           "/",
-			setupStore:     func(s *repository.LocalStore) {},
+			setupStore:     func(s *storage.MemoryStorage) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "Id not found",
 			path:           "/notfound",
-			setupStore:     func(s *repository.LocalStore) {},
+			setupStore:     func(s *storage.MemoryStorage) {},
 			expectedStatus: http.StatusInternalServerError,
 		},
 	}
@@ -48,9 +54,9 @@ func TestHandler_ExpandHandler(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			//arrange
-			store := repository.NewLocalStore()
-			repo := repository.NewLocalURLRepository(store)
-			svc := service.NewURLService(baseURL, repo)
+			store := storage.NewMemoryStorage()
+			repo := repository.NewURLRepository(store)
+			svc := service.NewURLService(config.DefaultBaseURL, repo)
 			h := handler.New(*svc)
 			tc.setupStore(store)
 

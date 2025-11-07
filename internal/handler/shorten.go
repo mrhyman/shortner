@@ -1,17 +1,16 @@
 package handler
 
 import (
+	"encoding/json"
 	"errors"
-	"fmt"
-	"io"
 	"net/http"
-	"strings"
 
+	"github.com/mrhyman/shortner/api"
 	"github.com/mrhyman/shortner/internal/logger"
 	"github.com/mrhyman/shortner/internal/model"
 )
 
-func (h *HTTPHandler) ShortLinkHandler(res http.ResponseWriter, req *http.Request) {
+func (h *HTTPHandler) ShortenHandler(res http.ResponseWriter, req *http.Request) {
 	log := logger.FromContext(req.Context())
 
 	if req.Method != http.MethodPost {
@@ -20,23 +19,15 @@ func (h *HTTPHandler) ShortLinkHandler(res http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	contentType := req.Header.Get("Content-Type")
-	if contentType != "" && !strings.HasPrefix(contentType, "text/plain") {
-		log.With("err", model.ErrInvalidRequestHeaders.Error()).Warn()
-		http.Error(res, model.ErrInvalidRequestHeaders.Error(), http.StatusBadRequest)
-		return
-	}
-
-	body, err := io.ReadAll(req.Body)
-	if err != nil {
+	var r api.ShortenRequest
+	dec := json.NewDecoder(req.Body)
+	if err := dec.Decode(&r); err != nil {
 		log.With("err", err.Error()).Warn()
-		http.Error(res, model.ErrInvalidURL.Error(), http.StatusBadRequest)
+		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	originalURL := strings.TrimSpace(string(body))
-
-	shortURL, err := h.svc.Shorten(req.Context(), originalURL)
+	shortURL, err := h.svc.Shorten(req.Context(), r.URL)
 	if err != nil {
 		switch {
 		case errors.Is(err, model.ErrInvalidURL):
@@ -52,7 +43,18 @@ func (h *HTTPHandler) ShortLinkHandler(res http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	res.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	resp := api.ShortenResponse{
+		Result: shortURL,
+	}
+
+	res.Header().Set("Content-Type", "application/json")
+
 	res.WriteHeader(http.StatusCreated)
-	fmt.Fprint(res, shortURL)
+
+	enc := json.NewEncoder(res)
+	if err := enc.Encode(resp); err != nil {
+		log.With("err", err.Error())
+		http.Error(res, model.ErrResponseEncoding.Error(), http.StatusBadRequest)
+		return
+	}
 }

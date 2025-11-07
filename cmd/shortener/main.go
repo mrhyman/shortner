@@ -2,29 +2,33 @@ package main
 
 import (
 	"context"
-	"flag"
 
 	"github.com/mrhyman/shortner/internal/config"
 	"github.com/mrhyman/shortner/internal/handler"
+	"github.com/mrhyman/shortner/internal/logger"
 	"github.com/mrhyman/shortner/internal/repository"
+	"github.com/mrhyman/shortner/internal/repository/storage"
 	"github.com/mrhyman/shortner/internal/server"
 	"github.com/mrhyman/shortner/internal/service"
 )
 
-var cfg config.AppConfig
-
-func init() {
-	flag.StringVar(&cfg.BaseURL, "a", "localhost:8080", "HTTP server address, e.g. localhost:8888")
-	flag.StringVar(&cfg.BaseShortURL, "b", "http://localhost:8080", "Base URL for short links, e.g. http://localhost:8080/")
-	flag.Parse()
-}
-
 func main() {
-	store := repository.NewLocalStore()
-	repo := repository.NewLocalURLRepository(store)
-	svc := service.NewURLService(cfg.BaseShortURL, repo)
-	h := handler.New(*svc)
-	s := server.New(cfg.BaseURL, *h)
+	ctx := context.Background()
+	log := logger.New()
+	logger.WithinContext(ctx, log)
 
-	s.Start(context.Background())
+	defer log.Sync()
+
+	cfg := config.Load(ctx)
+	storage, err := storage.NewFileStorage(cfg.StoragePath)
+	if err != nil {
+		log.With("err", err.Error()).Fatal()
+	}
+
+	repo := repository.NewURLRepository(storage)
+	svc := service.NewURLService(cfg.BaseURL, repo)
+	h := handler.New(*svc)
+	s := server.New(cfg.ServerAddress, *h)
+
+	s.Start(ctx)
 }

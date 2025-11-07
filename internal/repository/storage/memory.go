@@ -1,4 +1,4 @@
-package repository
+package storage
 
 import (
 	"sync"
@@ -6,25 +6,25 @@ import (
 	"github.com/mrhyman/shortner/internal/model"
 )
 
-type LocalStore struct {
+type MemoryStorage struct {
 	mu  sync.RWMutex
 	url map[string]string
 }
 
-func NewLocalStore() *LocalStore {
-	return &LocalStore{
+func NewMemoryStorage() *MemoryStorage {
+	return &MemoryStorage{
 		url: make(map[string]string),
 	}
 }
 
-func (s *LocalStore) Store(id, original string) error {
+func (s *MemoryStorage) Store(link model.Link) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.url[id] = original
+	s.url[link.ShortURL] = link.OriginalURL
 	return nil
 }
 
-func (s *LocalStore) GetByID(id string) (string, error) {
+func (s *MemoryStorage) GetByID(id string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

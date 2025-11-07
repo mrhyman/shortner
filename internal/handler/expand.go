@@ -5,11 +5,15 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/mrhyman/shortner/internal/logger"
 	"github.com/mrhyman/shortner/internal/model"
 )
 
 func (h *HTTPHandler) ExpandHandler(res http.ResponseWriter, req *http.Request) {
+	log := logger.FromContext(req.Context())
+	
 	if req.Method != http.MethodGet {
+		log.With("err", model.ErrInvalidRequestParams.Error()).Warn()
 		http.Error(res, model.ErrInvalidRequestParams.Error(), http.StatusMethodNotAllowed)
 		return
 	}
@@ -20,10 +24,13 @@ func (h *HTTPHandler) ExpandHandler(res http.ResponseWriter, req *http.Request) 
 	if err != nil {
 		switch {
 		case errors.Is(err, model.ErrInvalidLinkID):
+			log.With("err", err.Error()).Warn()
 			http.Error(res, err.Error(), http.StatusBadRequest)
 		case errors.Is(err, model.ErrNotFound):
+			log.With("err", err.Error()).Error()
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 		default:
+			log.With("err", err.Error()).Error()
 			http.Error(res, model.ErrWentWrong.Error(), http.StatusInternalServerError)
 		}
 		return

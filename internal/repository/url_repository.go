@@ -2,6 +2,10 @@ package repository
 
 import (
 	"context"
+
+	"github.com/google/uuid"
+	"github.com/mrhyman/shortner/internal/model"
+	"github.com/mrhyman/shortner/internal/repository/storage"
 )
 
 type URLRepository interface {
@@ -9,19 +13,22 @@ type URLRepository interface {
 	Store(ctx context.Context, url string, originalURL string) error
 }
 
-type LocalURLRepository struct {
-	store *LocalStore
-	ctx   context.Context
+type URLRepo struct {
+	storage storage.Storage
 }
 
-func NewLocalURLRepository(s *LocalStore) URLRepository {
-	return &LocalURLRepository{store: s}
+func NewURLRepository(s storage.Storage) *URLRepo {
+	return &URLRepo{storage: s}
 }
 
-func (r *LocalURLRepository) GetByID(ctx context.Context, id string) (string, error) {
-	return r.store.GetByID(id)
+func (r *URLRepo) GetByID(ctx context.Context, id string) (string, error) {
+	return r.storage.GetByID(id)
 }
 
-func (r *LocalURLRepository) Store(ctx context.Context, url string, originalURL string) error {
-	return r.store.Store(url, originalURL)
+func (r *URLRepo) Store(ctx context.Context, shortURL string, originalURL string) error {
+	link, err := model.NewLink( uuid.New(), originalURL, shortURL )
+	if err != nil {
+		return err
+	}
+	return r.storage.Store(*link)
 }
