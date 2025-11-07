@@ -8,7 +8,6 @@ import (
 
 	"github.com/caarlos0/env/v11"
 	"github.com/mrhyman/shortner/internal/logger"
-	"github.com/mrhyman/shortner/internal/model"
 )
 
 const (
@@ -34,7 +33,7 @@ func Load(ctx context.Context) AppConfig {
 	flag.Parse()
 
 	if err := env.Parse(&cfg); err != nil {
-		log.With("err", model.ErrEnvParsing.Error()).Fatal()
+		log.With("err", err.Error()).Fatal()
 	}
 
 	if cfg.ServerAddress == "" {
@@ -48,7 +47,7 @@ func Load(ctx context.Context) AppConfig {
 	if cfg.StoragePath == "" {
 		cwd, err := os.Getwd()
 		if err != nil {
-			log.With("err", model.ErrStorageInit.Error()).Fatal()
+			log.With("err", err.Error()).Fatal()
 		}
 
 		cfg.StoragePath = filepath.Join(cwd, *fileFlag)

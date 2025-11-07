@@ -29,7 +29,7 @@ func (h *HTTPHandler) ShortLinkHandler(res http.ResponseWriter, req *http.Reques
 
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
-		log.With("err", model.ErrInvalidURL.Error()).Warn()
+		log.With("err", err.Error()).Warn()
 		http.Error(res, model.ErrInvalidURL.Error(), http.StatusBadRequest)
 		return
 	}

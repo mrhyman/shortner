@@ -5,8 +5,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/mrhyman/shortner/internal/config"
 	"github.com/mrhyman/shortner/internal/handler"
+	"github.com/mrhyman/shortner/internal/model"
 	"github.com/mrhyman/shortner/internal/repository"
 	"github.com/mrhyman/shortner/internal/repository/storage"
 	"github.com/mrhyman/shortner/internal/service"
@@ -26,7 +28,11 @@ func TestHandler_ExpandHandler(t *testing.T) {
 			name: "Happy path",
 			path: "/abc123",
 			setupStore: func(s *storage.MemoryStorage) {
-				s.Store("abc123", "https://example.com")
+				s.Store(model.Link{
+					UUID: uuid.New(),
+					ShortURL: "abc123",
+					OriginalURL: "https://example.com",
+				})
 			},
 			expectedStatus: http.StatusTemporaryRedirect,
 			expectedHeader: "https://example.com",

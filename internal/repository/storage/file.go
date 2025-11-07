@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/google/uuid"
 	"github.com/mrhyman/shortner/internal/model"
 )
 
@@ -47,15 +46,9 @@ func NewFileStorage(path string) (*FileStorage, error) {
 	return fs, nil
 }
 
-func (fs *FileStorage) Store(shortURL, originalURL string) error {
+func (fs *FileStorage) Store(link model.Link) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
-
-	link := model.Link{
-		UUID:        uuid.New(),
-		ShortURL:    shortURL,
-		OriginalURL: originalURL,
-	}
 
 	fs.links = append(fs.links, link)
 	return fs.save()

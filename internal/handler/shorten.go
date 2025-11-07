@@ -22,8 +22,8 @@ func (h *HTTPHandler) ShortenHandler(res http.ResponseWriter, req *http.Request)
 	var r api.ShortenRequest
 	dec := json.NewDecoder(req.Body)
 	if err := dec.Decode(&r); err != nil {
-		log.With("err", model.ErrInvalidRequestParams.Error()).Error()
-		res.WriteHeader(http.StatusInternalServerError)
+		log.With("err", err.Error()).Warn()
+		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -31,13 +31,13 @@ func (h *HTTPHandler) ShortenHandler(res http.ResponseWriter, req *http.Request)
 	if err != nil {
 		switch {
 		case errors.Is(err, model.ErrInvalidURL):
-			log.With("err", model.ErrEnvParsing.Error()).Warn()
+			log.With("err", err.Error()).Warn()
 			http.Error(res, err.Error(), http.StatusBadRequest)
 		case errors.Is(err, model.ErrShortLinkGeneration) || errors.Is(err, model.ErrShortenError):
-			log.With("err", model.ErrEnvParsing.Error()).Error()
+			log.With("err", err.Error()).Error()
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 		default:
-			log.With("err", model.ErrEnvParsing.Error()).Error()
+			log.With("err", err.Error()).Error()
 			http.Error(res, model.ErrWentWrong.Error(), http.StatusInternalServerError)
 		}
 		return
@@ -53,8 +53,8 @@ func (h *HTTPHandler) ShortenHandler(res http.ResponseWriter, req *http.Request)
 
 	enc := json.NewEncoder(res)
 	if err := enc.Encode(resp); err != nil {
-		log.With("err", model.ErrResponseEncoding.Error(), "trace", err.Error())
-		http.Error(res, model.ErrResponseEncoding.Error(), http.StatusInternalServerError)
+		log.With("err", err.Error())
+		http.Error(res, model.ErrResponseEncoding.Error(), http.StatusBadRequest)
 		return
 	}
 }

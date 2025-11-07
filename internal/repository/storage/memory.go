@@ -17,10 +17,10 @@ func NewMemoryStorage() *MemoryStorage {
 	}
 }
 
-func (s *MemoryStorage) Store(shortURL, originalURL string) error {
+func (s *MemoryStorage) Store(link model.Link) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.url[shortURL] = originalURL
+	s.url[link.ShortURL] = link.OriginalURL
 	return nil
 }
 

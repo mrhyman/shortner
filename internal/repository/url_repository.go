@@ -3,6 +3,8 @@ package repository
 import (
 	"context"
 
+	"github.com/google/uuid"
+	"github.com/mrhyman/shortner/internal/model"
 	"github.com/mrhyman/shortner/internal/repository/storage"
 )
 
@@ -24,5 +26,9 @@ func (r *URLRepo) GetByID(ctx context.Context, id string) (string, error) {
 }
 
 func (r *URLRepo) Store(ctx context.Context, shortURL string, originalURL string) error {
-	return r.storage.Store(shortURL, originalURL)
+	link, err := model.NewLink( uuid.New(), originalURL, shortURL )
+	if err != nil {
+		return err
+	}
+	return r.storage.Store(*link)
 }

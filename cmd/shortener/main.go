@@ -6,7 +6,6 @@ import (
 	"github.com/mrhyman/shortner/internal/config"
 	"github.com/mrhyman/shortner/internal/handler"
 	"github.com/mrhyman/shortner/internal/logger"
-	"github.com/mrhyman/shortner/internal/model"
 	"github.com/mrhyman/shortner/internal/repository"
 	"github.com/mrhyman/shortner/internal/repository/storage"
 	"github.com/mrhyman/shortner/internal/server"
@@ -23,7 +22,7 @@ func main() {
 	cfg := config.Load(ctx)
 	storage, err := storage.NewFileStorage(cfg.StoragePath)
 	if err != nil {
-		log.With("err", model.ErrWentWrong.Error()).Fatal()
+		log.With("err", err.Error()).Fatal()
 	}
 
 	repo := repository.NewURLRepository(storage)
