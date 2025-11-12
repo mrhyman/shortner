@@ -11,6 +11,7 @@ import (
 type URLRepository interface {
 	GetByID(ctx context.Context, id string) (string, error)
 	Store(ctx context.Context, url string, originalURL string) error
+	Ping(ctx context.Context) error
 }
 
 type URLRepo struct {
@@ -32,3 +33,9 @@ func (r *URLRepo) Store(ctx context.Context, shortURL string, originalURL string
 	}
 	return r.storage.Store(*link)
 }
+
+func (r *URLRepo) Ping(ctx context.Context) error {
+	return r.storage.Ping()
+}
+
+

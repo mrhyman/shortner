@@ -35,3 +35,7 @@ func (s *MemoryStorage) GetByID(id string) (string, error) {
 
 	return v, nil
 }
+
+func (s *MemoryStorage) Ping() error {
+	return nil
+}

@@ -2,7 +2,11 @@ package main
 
 import (
 	"context"
+	"time"
 
+	_ "github.com/lib/pq"
+
+	"github.com/jmoiron/sqlx"
 	"github.com/mrhyman/shortner/internal/config"
 	"github.com/mrhyman/shortner/internal/handler"
 	"github.com/mrhyman/shortner/internal/logger"
@@ -20,6 +24,16 @@ func main() {
 	defer log.Sync()
 
 	cfg := config.Load(ctx)
+
+	db, err := sqlx.Open("postgres", cfg.DBDSN)
+	if err != nil {
+		log.With("err", err).Fatal()
+	}
+	defer db.Close()
+
+	db.SetMaxOpenConns(10)
+	db.SetConnMaxLifetime(time.Hour)
+
 	storage, err := storage.NewFileStorage(cfg.StoragePath)
 	if err != nil {
 		log.With("err", err.Error()).Fatal()

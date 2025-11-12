@@ -67,6 +67,11 @@ func (fs *FileStorage) GetByID(id string) (string, error) {
 	return "", model.ErrNotFound
 }
 
+func (fs *FileStorage) Ping() error {
+	_, err := os.Stat(fs.path)
+	return err
+}
+
 func (fs *FileStorage) save() error {
 	data, err := json.Marshal(fs.links)
 	if err != nil {

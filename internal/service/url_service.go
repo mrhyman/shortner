@@ -70,3 +70,7 @@ func (s *URLService) Shorten(ctx context.Context, originalURL string) (string, e
 
 	return base.ResolveReference(short).String(), nil
 }
+
+func (s *URLService) Ping(ctx context.Context) error {
+	return s.repo.Ping(ctx)
+}
