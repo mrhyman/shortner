@@ -23,19 +23,17 @@ func NewURLRepository(s storage.Storage) *URLRepo {
 }
 
 func (r *URLRepo) GetByID(ctx context.Context, id string) (string, error) {
-	return r.storage.GetByID(id)
+	return r.storage.GetByID(ctx, id)
 }
 
 func (r *URLRepo) Store(ctx context.Context, shortURL string, originalURL string) error {
-	link, err := model.NewLink( uuid.New(), originalURL, shortURL )
+	link, err := model.NewLink(uuid.New(), originalURL, shortURL)
 	if err != nil {
 		return err
 	}
-	return r.storage.Store(*link)
+	return r.storage.Store(ctx, *link)
 }
 
 func (r *URLRepo) Ping(ctx context.Context) error {
 	return r.storage.Ping()
 }
-
-

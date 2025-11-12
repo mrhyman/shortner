@@ -21,6 +21,7 @@ func (h *HTTPHandler) PingHandler(res http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		log.With("err", err.Error()).Error()
 		http.Error(res, model.ErrStorageUnavailable.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	res.Header().Set("Content-Type", "text/plain; charset=utf-8")

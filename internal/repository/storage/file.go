@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -46,7 +47,7 @@ func NewFileStorage(path string) (*FileStorage, error) {
 	return fs, nil
 }
 
-func (fs *FileStorage) Store(link model.Link) error {
+func (fs *FileStorage) Store(ctx context.Context, link model.Link) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
@@ -54,7 +55,7 @@ func (fs *FileStorage) Store(link model.Link) error {
 	return fs.save()
 }
 
-func (fs *FileStorage) GetByID(id string) (string, error) {
+func (fs *FileStorage) GetByID(ctx context.Context, id string) (string, error) {
 	fs.mu.RLock()
 	defer fs.mu.RUnlock()
 
@@ -70,6 +71,10 @@ func (fs *FileStorage) GetByID(id string) (string, error) {
 func (fs *FileStorage) Ping() error {
 	_, err := os.Stat(fs.path)
 	return err
+}
+
+func (fs *FileStorage) Close() error {
+	return nil
 }
 
 func (fs *FileStorage) save() error {

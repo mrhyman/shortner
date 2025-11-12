@@ -15,6 +15,7 @@ var (
 	ErrInvalidRequestHeaders = errors.New("ivalid request headers")
 	ErrWentWrong             = errors.New("something went wrong")
 	ErrEnvParsing            = errors.New("parsing .env error")
+	ErrEmptyEnv              = errors.New("empty .env variable error")
 	ErrLoggerSetup           = errors.New("logger setup error")
 	ErrResponseEncoding      = errors.New("response encoding error")
 	ErrCompressReading       = errors.New("compress reading error")

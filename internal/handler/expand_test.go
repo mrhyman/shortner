@@ -1,6 +1,7 @@
 package handler_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -23,14 +24,16 @@ func TestHandler_ExpandHandler(t *testing.T) {
 		expectedHeader string
 	}
 
+	ctx := context.Background()
+
 	cases := []testCase{
 		{
 			name: "Happy path",
 			path: "/abc123",
 			setupStore: func(s *storage.MemoryStorage) {
-				s.Store(model.Link{
-					UUID: uuid.New(),
-					ShortURL: "abc123",
+				s.Store(ctx, model.Link{
+					UUID:        uuid.New(),
+					ShortURL:    "abc123",
 					OriginalURL: "https://example.com",
 				})
 			},

@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"sync"
 
 	"github.com/mrhyman/shortner/internal/model"
@@ -17,14 +18,14 @@ func NewMemoryStorage() *MemoryStorage {
 	}
 }
 
-func (s *MemoryStorage) Store(link model.Link) error {
+func (s *MemoryStorage) Store(ctx context.Context, link model.Link) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.url[link.ShortURL] = link.OriginalURL
 	return nil
 }
 
-func (s *MemoryStorage) GetByID(id string) (string, error) {
+func (s *MemoryStorage) GetByID(ctx context.Context, id string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -37,5 +38,9 @@ func (s *MemoryStorage) GetByID(id string) (string, error) {
 }
 
 func (s *MemoryStorage) Ping() error {
+	return nil
+}
+
+func (s *MemoryStorage) Close() error {
 	return nil
 }

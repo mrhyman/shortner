@@ -1,6 +1,7 @@
 package handler_test
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -30,6 +31,7 @@ func TestHandler_ShortLinkHandler(t *testing.T) {
 		expectInStore  bool
 	}
 
+	ctx := context.Background()
 	baseURL := config.DefaultBaseURL
 
 	cases := []testCase{
@@ -104,16 +106,16 @@ func TestHandler_ShortLinkHandler(t *testing.T) {
 					t.Fatalf("[%s] invalid short URL: %v", tc.name, err)
 				}
 				id := path.Base(u.Path)
-				err = store.Store(model.Link{
-					UUID: uuid.New(),
-					ShortURL: shortURL,
+				err = store.Store(ctx, model.Link{
+					UUID:        uuid.New(),
+					ShortURL:    shortURL,
 					OriginalURL: tc.originalURL,
 				})
 				if err != nil {
 					t.Fatalf("[%s] id %q not found in store", tc.name, id)
 				}
 
-				v, _ := store.GetByID(id)
+				v, _ := store.GetByID(ctx, id)
 				if v != tc.originalURL {
 					t.Errorf("[%s] expected %q, got %q", tc.name, tc.originalURL, v)
 				}

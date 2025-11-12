@@ -13,8 +13,16 @@ import (
 const (
 	DefaultServerAddress   = "localhost:8080"
 	DefaultBaseURL         = "http://localhost:8080"
-	DefaultFileStoragePath = "/.storage/db.json"
-	DefaultDBDSN           = "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
+	DefaultFileStoragePath = "" //"/.storage/db.json"
+	DefaultDBDSN           = "" //"postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
+)
+
+type StorageMode int
+
+const (
+	StorageDB StorageMode = iota
+	StorageFile
+	StorageMemory
 )
 
 type AppConfig struct {
@@ -22,6 +30,7 @@ type AppConfig struct {
 	BaseURL       string `env:"BASE_URL"`
 	StoragePath   string `env:"FILE_STORAGE_PATH"`
 	DBDSN         string `env:"DATABASE_DSN"`
+	StorageMode   StorageMode
 }
 
 func Load(ctx context.Context) AppConfig {
@@ -60,5 +69,28 @@ func Load(ctx context.Context) AppConfig {
 		cfg.DBDSN = *dbFlag
 	}
 
-	return cfg
+	return setStorageMode(&cfg)
+}
+
+func setStorageMode(cfg *AppConfig) AppConfig {
+	_, envDBSet := os.LookupEnv("DATABASE_DSN")
+	_, envFileSet := os.LookupEnv("FILE_STORAGE_PATH")
+
+	dbFlag := flag.Lookup("d")
+	fileFlag := flag.Lookup("f")
+
+	dbFlagSet := dbFlag != nil && dbFlag.Value.String() != "" && dbFlag.Value.String() != DefaultDBDSN
+	fileFlagSet := fileFlag != nil && fileFlag.Value.String() != "" && fileFlag.Value.String() != DefaultFileStoragePath
+
+	switch {
+	case cfg.DBDSN != "" && (envDBSet || dbFlagSet):
+		cfg.StorageMode = StorageDB
+
+	case envFileSet || fileFlagSet:
+		cfg.StorageMode = StorageFile
+
+	default:
+		cfg.StorageMode = StorageMemory
+	}
+	return *cfg
 }

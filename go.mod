@@ -10,6 +10,9 @@ require (
 )
 
 require (
+	github.com/golang-migrate/migrate/v4 v4.19.0 // indirect
+	github.com/hashicorp/errwrap v1.1.0 // indirect
+	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/jmoiron/sqlx v1.4.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
@@ -18,5 +21,5 @@ require (
 require (
 	github.com/caarlos0/env/v11 v11.3.1
 	github.com/lib/pq v1.10.9
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/text v0.23.0 // indirect
 )

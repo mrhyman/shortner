@@ -1,9 +1,14 @@
 package storage
 
-import "github.com/mrhyman/shortner/internal/model"
+import (
+	"context"
+
+	"github.com/mrhyman/shortner/internal/model"
+)
 
 type Storage interface {
-	GetByID(id string) (string, error)
-	Store(link model.Link) error
+	GetByID(ctx context.Context, id string) (string, error)
+	Store(ctx context.Context, link model.Link) error
 	Ping() error
+	Close() error
 }

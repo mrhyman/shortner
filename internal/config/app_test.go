@@ -8,7 +8,6 @@ import (
 	"github.com/mrhyman/shortner/internal/config"
 )
 
-
 func resetEnvAndFlags() {
 	os.Unsetenv("SERVER_ADDRESS")
 	os.Unsetenv("BASE_URL")
@@ -17,11 +16,11 @@ func resetEnvAndFlags() {
 
 func TestSetup_ConfigPriorities(t *testing.T) {
 	tests := []struct {
-		name           string
-		envVars        map[string]string
-		args           []string
-		wantAddress    string
-		wantBaseURL    string
+		name        string
+		envVars     map[string]string
+		args        []string
+		wantAddress string
+		wantBaseURL string
 	}{
 		{
 			name:        "defaults when no env or flags",
@@ -31,8 +30,8 @@ func TestSetup_ConfigPriorities(t *testing.T) {
 			wantBaseURL: config.DefaultBaseURL,
 		},
 		{
-			name: "from flags only",
-			args: []string{"cmd", "-a", "127.0.0.1:9999", "-b", "http://127.0.0.1:9999"},
+			name:        "from flags only",
+			args:        []string{"cmd", "-a", "127.0.0.1:9999", "-b", "http://127.0.0.1:9999"},
 			wantAddress: "127.0.0.1:9999",
 			wantBaseURL: "http://127.0.0.1:9999",
 		},
