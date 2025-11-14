@@ -116,7 +116,7 @@ func TestHandler_ShortLinkHandler(t *testing.T) {
 				}
 
 				v, _ := store.GetByID(ctx, id)
-				if v != tc.originalURL {
+				if v.OriginalURL != tc.originalURL {
 					t.Errorf("[%s] expected %q, got %q", tc.name, tc.originalURL, v)
 				}
 			}

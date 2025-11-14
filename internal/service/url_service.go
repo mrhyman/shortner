@@ -3,8 +3,11 @@ package service
 import (
 	"context"
 	"crypto/rand"
+	"fmt"
 	"net/url"
 
+	"github.com/google/uuid"
+	"github.com/mrhyman/shortner/api"
 	"github.com/mrhyman/shortner/internal/model"
 	"github.com/mrhyman/shortner/internal/repository"
 )
@@ -36,12 +39,12 @@ func (s *URLService) Expand(ctx context.Context, id string) (string, error) {
 		return "", model.ErrInvalidLinkID
 	}
 
-	originalURL, err := s.repo.GetByID(ctx, id)
+	link, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return "", model.ErrNotFound
 	}
 
-	return originalURL, nil
+	return link.OriginalURL, nil
 }
 
 func (s *URLService) Shorten(ctx context.Context, originalURL string) (string, error) {
@@ -69,6 +72,30 @@ func (s *URLService) Shorten(ctx context.Context, originalURL string) (string, e
 	}
 
 	return base.ResolveReference(short).String(), nil
+}
+
+func (s *URLService) ShortenBatch(ctx context.Context, batch []api.ShortenBatchRequest) ([]model.Link, error) {
+	links := make([]model.Link, 0, len(batch))
+
+	for _, item := range batch {
+		shortID, err := generateShortID(8)
+		if err != nil {
+			return nil, model.ErrShortLinkGeneration
+		}
+
+		links = append(links, model.Link{
+			UUID:          uuid.New(),
+			ShortURL:      fmt.Sprintf("%s/%s", s.base, shortID),
+			OriginalURL:   item.OriginalURL,
+			CorrelationID: item.CorrelationID,
+		})
+	}
+
+	if err := s.repo.StoreBatch(ctx, links); err != nil {
+		return nil, model.ErrShortenError
+	}
+
+	return links, nil
 }
 
 func (s *URLService) Ping(ctx context.Context) error {

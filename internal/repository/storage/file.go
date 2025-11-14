@@ -55,17 +55,25 @@ func (fs *FileStorage) Store(ctx context.Context, link model.Link) error {
 	return fs.save()
 }
 
-func (fs *FileStorage) GetByID(ctx context.Context, id string) (string, error) {
+func (fs *FileStorage) StoreBatch(ctx context.Context, ls []model.Link) error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	fs.links = append(fs.links, ls...)
+	return fs.save()
+}
+
+func (fs *FileStorage) GetByID(ctx context.Context, id string) (*model.Link, error) {
 	fs.mu.RLock()
 	defer fs.mu.RUnlock()
 
 	for _, link := range fs.links {
 		if link.ShortURL == id {
-			return link.OriginalURL, nil
+			return &link, nil
 		}
 	}
 
-	return "", model.ErrNotFound
+	return nil, model.ErrNotFound
 }
 
 func (fs *FileStorage) Ping() error {

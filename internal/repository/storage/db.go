@@ -48,10 +48,45 @@ func (ds *DBStorage) Store(ctx context.Context, l model.Link) error {
 	return tx.Commit()
 }
 
-func (ds *DBStorage) GetByID(ctx context.Context, id string) (string, error) {
-	// TODO
+func (ds *DBStorage) StoreBatch(ctx context.Context, ls []model.Link) error {
+	tx, err := ds.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 
-	return "", nil
+	stmt, err := tx.PrepareContext(ctx, `
+		INSERT INTO links (uuid, short_url, original_url, correlation_id)
+		VALUES ($1, $2, $3, $4)
+	`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for _, link := range ls {
+		_, err := stmt.ExecContext(ctx, link.UUID, link.ShortURL, link.OriginalURL, link.CorrelationID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
+func (ds *DBStorage) GetByID(ctx context.Context, id string) (*model.Link, error) {
+	var link model.Link
+
+	err := ds.db.Get(
+		&link,
+		`SELECT * FROM links WHERE short_url LIKE '%' || $1`,
+		id,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &link, nil
 }
 
 func (ds *DBStorage) Ping() error {

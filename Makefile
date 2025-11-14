@@ -4,3 +4,6 @@ lint:
 
 test:
 	shortenertest.exe -test.v -test.run=^TestIteration4$ -binary-path=cmd/shortener/shortener
+
+mc:
+	migrate create -ext sql -dir ./migrations -seq ${NAME}

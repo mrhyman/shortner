@@ -8,4 +8,6 @@ CREATE TABLE IF NOT EXISTS links (
 );
 
 -- Индекс для быстрого поиска по оригинальной ссылке
-CREATE INDEX IF NOT EXISTS idx_links_original_url ON links(original_url);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_links_original_url
+    ON links(original_url);
+

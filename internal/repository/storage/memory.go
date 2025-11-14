@@ -9,38 +9,48 @@ import (
 
 type MemoryStorage struct {
 	mu  sync.RWMutex
-	url map[string]string
+	url map[string]model.Link
 }
 
 func NewMemoryStorage() *MemoryStorage {
 	return &MemoryStorage{
-		url: make(map[string]string),
+		url: make(map[string]model.Link),
 	}
 }
 
-func (s *MemoryStorage) Store(ctx context.Context, link model.Link) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.url[link.ShortURL] = link.OriginalURL
+func (ms *MemoryStorage) Store(ctx context.Context, link model.Link) error {
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
+	ms.url[link.ShortURL] = link
 	return nil
 }
 
-func (s *MemoryStorage) GetByID(ctx context.Context, id string) (string, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (ms *MemoryStorage) StoreBatch(ctx context.Context, ls []model.Link) error {
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
 
-	v, ok := s.url[id]
+	for _, link := range ls {
+		ms.url[link.ShortURL] = link
+	}
+	return nil
+}
+
+func (ms *MemoryStorage) GetByID(ctx context.Context, id string) (*model.Link, error) {
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
+
+	v, ok := ms.url[id]
 	if !ok {
-		return "", model.ErrNotFound
+		return nil, model.ErrNotFound
 	}
 
-	return v, nil
+	return &v, nil
 }
 
-func (s *MemoryStorage) Ping() error {
+func (ms *MemoryStorage) Ping() error {
 	return nil
 }
 
-func (s *MemoryStorage) Close() error {
+func (ms *MemoryStorage) Close() error {
 	return nil
 }

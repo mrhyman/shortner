@@ -7,8 +7,9 @@ import (
 )
 
 type Storage interface {
-	GetByID(ctx context.Context, id string) (string, error)
+	GetByID(ctx context.Context, id string) (*model.Link, error)
 	Store(ctx context.Context, link model.Link) error
+	StoreBatch(ctx context.Context, links []model.Link) error
 	Ping() error
 	Close() error
 }
