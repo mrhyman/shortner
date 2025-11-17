@@ -13,8 +13,8 @@ import (
 const (
 	DefaultServerAddress   = "localhost:8080"
 	DefaultBaseURL         = "http://localhost:8080"
-	DefaultFileStoragePath = "" //"/.storage/db.json"
-	DefaultDBDSN           = "" //"postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
+	DefaultFileStoragePath = ""
+	DefaultDBDSN           = ""
 )
 
 type StorageMode int

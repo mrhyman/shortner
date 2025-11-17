@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/mrhyman/shortner/api"
 	"github.com/mrhyman/shortner/internal/logger"
@@ -28,19 +29,42 @@ func (h *HTTPHandler) ShortenHandler(res http.ResponseWriter, req *http.Request)
 	}
 
 	shortURL, err := h.svc.Shorten(req.Context(), r.URL)
+
 	if err != nil {
+		var existsErr *model.AlreadyExistsError
+
 		switch {
+		case errors.As(err, &existsErr):
+			resp := api.ShortenResponse{
+				Result: strings.TrimSuffix(existsErr.ShortURL, "\n"),
+			}
+
+			res.Header().Set("Content-Type", "application/json")
+			res.WriteHeader(http.StatusConflict)
+
+			log.With("err", existsErr.Error()).Error()
+			enc := json.NewEncoder(res)
+			if err := enc.Encode(resp); err != nil {
+				log.With("err", err.Error())
+				http.Error(res, model.ErrResponseEncoding.Error(), http.StatusBadRequest)
+			}
+			return
+
 		case errors.Is(err, model.ErrInvalidURL):
 			log.With("err", err.Error()).Warn()
 			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+
 		case errors.Is(err, model.ErrShortLinkGeneration) || errors.Is(err, model.ErrShortenError):
 			log.With("err", err.Error()).Error()
 			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+
 		default:
 			log.With("err", err.Error()).Error()
 			http.Error(res, model.ErrWentWrong.Error(), http.StatusInternalServerError)
+			return
 		}
-		return
 	}
 
 	resp := api.ShortenResponse{
@@ -48,7 +72,6 @@ func (h *HTTPHandler) ShortenHandler(res http.ResponseWriter, req *http.Request)
 	}
 
 	res.Header().Set("Content-Type", "application/json")
-
 	res.WriteHeader(http.StatusCreated)
 
 	enc := json.NewEncoder(res)

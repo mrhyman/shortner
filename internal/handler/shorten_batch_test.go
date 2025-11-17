@@ -13,6 +13,7 @@ import (
 	"github.com/mrhyman/shortner/internal/repository"
 	"github.com/mrhyman/shortner/internal/repository/storage"
 	"github.com/mrhyman/shortner/internal/service"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestShortenBatchHandler(t *testing.T) {
@@ -28,44 +29,43 @@ func TestShortenBatchHandler(t *testing.T) {
 
 	tests := []testCase{
 		{
-			name:           "invalid method",
+			name:           "Invalid method",
 			method:         http.MethodGet,
 			body:           nil,
 			wantStatusCode: http.StatusMethodNotAllowed,
 			wantResp:       nil,
 		},
 		{
-			name:           "empty body",
+			name:           "Empty body",
 			method:         http.MethodPost,
 			body:           nil,
 			wantStatusCode: http.StatusBadRequest,
 			wantResp:       nil,
 		},
 		{
-			name:           "empty slice",
+			name:           "Empty slice",
 			method:         http.MethodPost,
 			body:           []api.ShortenBatchRequest{},
 			wantStatusCode: http.StatusOK,
 			wantResp:       []struct{}{},
 		},
-		// замокать бд
-		// {
-		// 	name:   "valid requests",
-		// 	method: http.MethodPost,
-		// 	body: []api.ShortenBatchRequest{
-		// 		{CorrelationID: "1", OriginalURL: "http://example.com/1"},
-		// 		{CorrelationID: "2", OriginalURL: "http://example.com/2"},
-		// 	},
-		// 	wantStatusCode: http.StatusCreated,
-		// 	wantResp: []api.ShortenBatchResponse{
-		// 		{CorrelationID: "1", ShortURL: baseURL + "1"},
-		// 		{CorrelationID: "2", ShortURL: baseURL + "2"},
-		// 	},
-		// },
+		{
+			name:   "Happy path",
+			method: http.MethodPost,
+			body: []api.ShortenBatchRequest{
+				{CorrelationID: "1", OriginalURL: "http://example.com/1"},
+				{CorrelationID: "2", OriginalURL: "http://example.com/2"},
+			},
+			wantStatusCode: http.StatusCreated,
+			wantResp: []api.ShortenBatchResponse{
+				{CorrelationID: "1"},
+				{CorrelationID: "2"},
+			},
+		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
 			// arrange
 			store := storage.NewMemoryStorage()
 			repo := repository.NewURLRepository(store)
@@ -73,15 +73,15 @@ func TestShortenBatchHandler(t *testing.T) {
 			h := handler.New(*svc)
 
 			var bodyBytes []byte
-			if tt.body != nil {
+			if tc.body != nil {
 				var err error
-				bodyBytes, err = json.Marshal(tt.body)
+				bodyBytes, err = json.Marshal(tc.body)
 				if err != nil {
 					t.Fatalf("failed to marshal body: %v", err)
 				}
 			}
 
-			req := httptest.NewRequest(tt.method, "/shorten/batch", bytes.NewReader(bodyBytes))
+			req := httptest.NewRequest(tc.method, "/shorten/batch", bytes.NewReader(bodyBytes))
 			req.Header.Set("Content-Type", "application/json")
 			rec := httptest.NewRecorder()
 
@@ -90,16 +90,16 @@ func TestShortenBatchHandler(t *testing.T) {
 			res := rec.Result()
 			defer res.Body.Close()
 
-			if res.StatusCode != tt.wantStatusCode {
-				t.Errorf("status code: got %v, want %v", res.StatusCode, tt.wantStatusCode)
+			if res.StatusCode != tc.wantStatusCode {
+				t.Errorf("status code: got %v, want %v", res.StatusCode, tc.wantStatusCode)
 			}
 
-			if tt.wantResp != nil {
-				switch tt.wantResp.(type) {
+			if tc.wantResp != nil {
+				switch tc.wantResp.(type) {
 				case string:
 					got := string(bodyBytes)
-					if got != tt.wantResp.(string) {
-						t.Errorf("response: got %q, want %q", got, tt.wantResp.(string))
+					if got != tc.wantResp.(string) {
+						t.Errorf("response: got %q, want %q", got, tc.wantResp.(string))
 					}
 				default:
 					var got []api.ShortenBatchResponse
@@ -107,8 +107,14 @@ func TestShortenBatchHandler(t *testing.T) {
 						t.Fatalf("failed to decode response: %v", err)
 					}
 
-					if !equal(got, tt.wantResp) {
-						t.Errorf("response: got %+v, want %+v", got, tt.wantResp)
+					wantResp, _ := tc.wantResp.([]api.ShortenBatchResponse)
+					if len(got) != len(wantResp) {
+						t.Errorf("response length: got %d items, want %d", len(got), len(wantResp))
+					}
+
+					for i := range wantResp {
+						assert.Equal(t, wantResp[i].CorrelationID, got[i].CorrelationID)
+						assert.NotEmpty(t, got[i].ShortURL)
 					}
 				}
 			}
@@ -116,7 +122,6 @@ func TestShortenBatchHandler(t *testing.T) {
 	}
 }
 
-// простой helper для проверки равенства слайсов
 func equal(a, b interface{}) bool {
 	aj, _ := json.Marshal(a)
 	bj, _ := json.Marshal(b)

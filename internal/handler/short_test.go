@@ -5,8 +5,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
-	"path"
 	"strings"
 	"testing"
 
@@ -101,21 +99,16 @@ func TestHandler_ShortLinkHandler(t *testing.T) {
 			if tc.expectInStore {
 				body, _ := io.ReadAll(res.Body)
 				shortURL := strings.TrimSpace(string(body))
-				u, err := url.Parse(shortURL)
-				if err != nil {
-					t.Fatalf("[%s] invalid short URL: %v", tc.name, err)
-				}
-				id := path.Base(u.Path)
-				err = store.Store(ctx, model.Link{
+				err := store.Store(ctx, model.Link{
 					UUID:        uuid.New(),
 					ShortURL:    shortURL,
 					OriginalURL: tc.originalURL,
 				})
 				if err != nil {
-					t.Fatalf("[%s] id %q not found in store", tc.name, id)
+					t.Fatalf("[%s] short_url %q not found in store", tc.name, shortURL)
 				}
 
-				v, _ := store.GetByID(ctx, id)
+				v, _ := store.GetByShortURL(ctx, shortURL)
 				if v.OriginalURL != tc.originalURL {
 					t.Errorf("[%s] expected %q, got %q", tc.name, tc.originalURL, v)
 				}

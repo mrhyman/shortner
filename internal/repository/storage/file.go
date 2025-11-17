@@ -63,12 +63,12 @@ func (fs *FileStorage) StoreBatch(ctx context.Context, ls []model.Link) error {
 	return fs.save()
 }
 
-func (fs *FileStorage) GetByID(ctx context.Context, id string) (*model.Link, error) {
+func (fs *FileStorage) GetByShortURL(ctx context.Context, shortURL string) (*model.Link, error) {
 	fs.mu.RLock()
 	defer fs.mu.RUnlock()
 
 	for _, link := range fs.links {
-		if link.ShortURL == id {
+		if link.ShortURL == shortURL {
 			return &link, nil
 		}
 	}

@@ -2,12 +2,15 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/jackc/pgerrcode"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"github.com/mrhyman/shortner/internal/model"
 )
 
@@ -32,20 +35,13 @@ func NewDBStorage(dsn string) (*DBStorage, error) {
 }
 
 func (ds *DBStorage) Store(ctx context.Context, l model.Link) error {
-	tx, err := ds.db.Begin()
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.ExecContext(ctx,
+	if _, err := ds.db.ExecContext(ctx,
 		"INSERT INTO links (uuid, short_url, original_url) VALUES ($1, $2, $3)",
-		l.UUID, l.ShortURL, l.OriginalURL)
-	if err != nil {
-		tx.Rollback()
-		return err
+		l.UUID, l.ShortURL, l.OriginalURL,
+	); err != nil {
+		return ds.convertPgError(ctx, l, err)
 	}
-
-	return tx.Commit()
+	return nil
 }
 
 func (ds *DBStorage) StoreBatch(ctx context.Context, ls []model.Link) error {
@@ -74,13 +70,28 @@ func (ds *DBStorage) StoreBatch(ctx context.Context, ls []model.Link) error {
 	return tx.Commit()
 }
 
-func (ds *DBStorage) GetByID(ctx context.Context, id string) (*model.Link, error) {
+func (ds *DBStorage) GetByShortURL(ctx context.Context, shortURL string) (*model.Link, error) {
 	var link model.Link
 
 	err := ds.db.Get(
 		&link,
 		`SELECT * FROM links WHERE short_url LIKE '%' || $1`,
-		id,
+		shortURL,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &link, nil
+}
+
+func (ds *DBStorage) GetByOriginalURL(ctx context.Context, originURL string) (*model.Link, error) {
+	var link model.Link
+
+	err := ds.db.Get(
+		&link,
+		`SELECT * FROM links WHERE original_url = $1`,
+		originURL,
 	)
 	if err != nil {
 		return nil, err
@@ -116,4 +127,18 @@ func (ds *DBStorage) MigrateUp(migrationsDir, dsn string) error {
 	}
 
 	return nil
+}
+
+func (ds *DBStorage) convertPgError(ctx context.Context, l model.Link, err error) error {
+	var pgErr *pq.Error
+	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+		if pgErr.Constraint == "idx_links_original_url" {
+			existing, getErr := ds.GetByOriginalURL(ctx, l.OriginalURL)
+			if getErr == nil {
+				return model.NewAlreadyExistsError(existing.ShortURL, err)
+			}
+		}
+	}
+
+	return err
 }

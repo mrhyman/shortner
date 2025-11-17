@@ -35,11 +35,11 @@ func (ms *MemoryStorage) StoreBatch(ctx context.Context, ls []model.Link) error 
 	return nil
 }
 
-func (ms *MemoryStorage) GetByID(ctx context.Context, id string) (*model.Link, error) {
+func (ms *MemoryStorage) GetByShortURL(ctx context.Context, shortURL string) (*model.Link, error) {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
-	v, ok := ms.url[id]
+	v, ok := ms.url[shortURL]
 	if !ok {
 		return nil, model.ErrNotFound
 	}

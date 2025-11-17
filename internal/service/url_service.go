@@ -34,12 +34,24 @@ func generateShortID(n int) (string, error) {
 	return string(b), nil
 }
 
-func (s *URLService) Expand(ctx context.Context, id string) (string, error) {
-	if id == "" {
+func (s *URLService) Expand(ctx context.Context, shortURL string) (string, error) {
+	if shortURL == "" {
 		return "", model.ErrInvalidLinkID
 	}
 
-	link, err := s.repo.GetByID(ctx, id)
+	base, err := url.Parse(s.base)
+	if err != nil {
+		return "", model.ErrInvalidURL
+	}
+
+	short, err := url.Parse(shortURL)
+	if err != nil {
+		return "", model.ErrInvalidURL
+	}
+
+	rr := base.ResolveReference(short).String()
+
+	link, err := s.repo.GetByShortURL(ctx, rr)
 	if err != nil {
 		return "", model.ErrNotFound
 	}
@@ -57,10 +69,6 @@ func (s *URLService) Shorten(ctx context.Context, originalURL string) (string, e
 		return "", model.ErrShortLinkGeneration
 	}
 
-	if err := s.repo.Store(ctx, id, originalURL); err != nil {
-		return "", model.ErrShortenError
-	}
-
 	base, err := url.Parse(s.base)
 	if err != nil {
 		return "", model.ErrInvalidURL
@@ -71,7 +79,13 @@ func (s *URLService) Shorten(ctx context.Context, originalURL string) (string, e
 		return "", model.ErrInvalidURL
 	}
 
-	return base.ResolveReference(short).String(), nil
+	rr := base.ResolveReference(short).String()
+
+	if err := s.repo.Store(ctx, rr, originalURL); err != nil {
+		return "", err
+	}
+
+	return rr, nil
 }
 
 func (s *URLService) ShortenBatch(ctx context.Context, batch []api.ShortenBatchRequest) ([]model.Link, error) {

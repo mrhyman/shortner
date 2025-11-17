@@ -25,13 +25,13 @@ func TestPingHandler(t *testing.T) {
 		expectedBody   string
 	}{
 		{
-			name:           "успешный GET запрос",
+			name:           "Success GET request",
 			method:         http.MethodGet,
 			expectedStatus: http.StatusOK,
 			expectedBody:   "pong",
 		},
 		{
-			name:           "неверный метод POST",
+			name:           "Wrong POST request",
 			method:         http.MethodPost,
 			expectedStatus: http.StatusMethodNotAllowed,
 			expectedBody:   model.ErrInvalidRequestParams.Error() + "\n",

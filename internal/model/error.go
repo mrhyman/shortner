@@ -2,6 +2,7 @@ package model
 
 import (
 	"errors"
+	"fmt"
 )
 
 var (
@@ -22,3 +23,23 @@ var (
 	ErrStorageInit           = errors.New("storage init error")
 	ErrStorageUnavailable    = errors.New("storage unavailable")
 )
+
+type AlreadyExistsError struct {
+	ShortURL string
+	Err      error
+}
+
+func (e *AlreadyExistsError) Error() string {
+	return fmt.Sprintf("lint with short url already exists: %s", e.ShortURL)
+}
+
+func (e *AlreadyExistsError) Unwrap() error {
+	return e.Err
+}
+
+func NewAlreadyExistsError(shortURL string, err error) error {
+	return &AlreadyExistsError{
+		ShortURL: shortURL,
+		Err:      err,
+	}
+}

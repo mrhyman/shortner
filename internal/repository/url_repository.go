@@ -9,7 +9,7 @@ import (
 )
 
 type URLRepository interface {
-	GetByID(ctx context.Context, id string) (*model.Link, error)
+	GetByShortURL(ctx context.Context, shortURL string) (*model.Link, error)
 	Store(ctx context.Context, url string, originalURL string) error
 	StoreBatch(ctx context.Context, links []model.Link) error
 	Ping(ctx context.Context) error
@@ -23,8 +23,8 @@ func NewURLRepository(s storage.Storage) *URLRepo {
 	return &URLRepo{storage: s}
 }
 
-func (r *URLRepo) GetByID(ctx context.Context, id string) (*model.Link, error) {
-	return r.storage.GetByID(ctx, id)
+func (r *URLRepo) GetByShortURL(ctx context.Context, shortURL string) (*model.Link, error) {
+	return r.storage.GetByShortURL(ctx, shortURL)
 }
 
 func (r *URLRepo) Store(ctx context.Context, shortURL string, originalURL string) error {

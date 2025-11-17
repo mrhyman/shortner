@@ -24,6 +24,7 @@ func TestHandler_ExpandHandler(t *testing.T) {
 		expectedHeader string
 	}
 
+	baseURL := config.DefaultBaseURL
 	ctx := context.Background()
 
 	cases := []testCase{
@@ -33,7 +34,7 @@ func TestHandler_ExpandHandler(t *testing.T) {
 			setupStore: func(s *storage.MemoryStorage) {
 				s.Store(ctx, model.Link{
 					UUID:        uuid.New(),
-					ShortURL:    "abc123",
+					ShortURL:    baseURL + "/abc123",
 					OriginalURL: "https://example.com",
 				})
 			},

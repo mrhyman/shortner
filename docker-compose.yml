@@ -1,6 +1,6 @@
 services:
   pg:
-    image: docker-hosted.artifactory.tcsbank.ru/fd-core/finedog-postgresql:latest #postgres:15
+    image: postgres:16
     restart: always
     environment:
       POSTGRES_DB: postgres

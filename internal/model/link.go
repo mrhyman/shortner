@@ -12,7 +12,7 @@ type Link struct {
 }
 
 func NewLink(
-	linkID uuid.UUID, originalURL string, shortURL string, correlatioID string,
+	linkID uuid.UUID, originalURL string, shortURL string, correlationID string,
 ) (*Link, error) {
 	if uuid.Nil == linkID {
 		return nil, ErrInvalidLinkID
@@ -30,7 +30,7 @@ func NewLink(
 		UUID:          linkID,
 		OriginalURL:   originalURL,
 		ShortURL:      shortURL,
-		CorrelationID: correlatioID,
+		CorrelationID: correlationID,
 	}
 
 	return link, nil
