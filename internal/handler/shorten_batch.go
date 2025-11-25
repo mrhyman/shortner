@@ -4,14 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"strings"
 
 	"github.com/mrhyman/shortner/api"
 	"github.com/mrhyman/shortner/internal/logger"
 	"github.com/mrhyman/shortner/internal/model"
 )
 
-func (h *HTTPHandler) ShortenHandler(res http.ResponseWriter, req *http.Request) {
+func (h *HTTPHandler) ShortenBatchHandler(res http.ResponseWriter, req *http.Request) {
 	log := logger.FromContext(req.Context())
 
 	if req.Method != http.MethodPost {
@@ -20,58 +19,47 @@ func (h *HTTPHandler) ShortenHandler(res http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	var r api.ShortenRequest
+	var sbr []api.ShortenBatchRequest
 	dec := json.NewDecoder(req.Body)
-	if err := dec.Decode(&r); err != nil {
+	if err := dec.Decode(&sbr); err != nil {
 		log.With("err", err.Error()).Warn()
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	shortURL, err := h.svc.Shorten(req.Context(), r.URL)
+	if len(sbr) == 0 {
+		res.Header().Set("Content-Type", "application/json")
+		res.WriteHeader(http.StatusOK)
+		json.NewEncoder(res).Encode([]struct{}{})
+		return
+	}
 
+	links, err := h.svc.ShortenBatch(req.Context(), sbr)
 	if err != nil {
-		var existsErr *model.AlreadyExistsError
-
 		switch {
-		case errors.As(err, &existsErr):
-			resp := api.ShortenResponse{
-				Result: strings.TrimSuffix(existsErr.ShortURL, "\n"),
-			}
-
-			res.Header().Set("Content-Type", "application/json")
-			res.WriteHeader(http.StatusConflict)
-
-			log.With("err", existsErr.Error()).Error()
-			enc := json.NewEncoder(res)
-			if err := enc.Encode(resp); err != nil {
-				log.With("err", err.Error())
-				http.Error(res, model.ErrResponseEncoding.Error(), http.StatusBadRequest)
-			}
-			return
-
 		case errors.Is(err, model.ErrInvalidURL):
 			log.With("err", err.Error()).Warn()
 			http.Error(res, err.Error(), http.StatusBadRequest)
-			return
-
 		case errors.Is(err, model.ErrShortLinkGeneration) || errors.Is(err, model.ErrShortenError):
 			log.With("err", err.Error()).Error()
 			http.Error(res, err.Error(), http.StatusInternalServerError)
-			return
-
 		default:
 			log.With("err", err.Error()).Error()
 			http.Error(res, model.ErrWentWrong.Error(), http.StatusInternalServerError)
-			return
 		}
+		return
 	}
 
-	resp := api.ShortenResponse{
-		Result: shortURL,
+	var resp = make([]api.ShortenBatchResponse, 0, len(links))
+	for _, l := range links {
+		resp = append(resp, api.ShortenBatchResponse{
+			CorrelationID: l.CorrelationID,
+			ShortURL:      l.ShortURL,
+		})
 	}
 
 	res.Header().Set("Content-Type", "application/json")
+
 	res.WriteHeader(http.StatusCreated)
 
 	enc := json.NewEncoder(res)

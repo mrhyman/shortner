@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -46,7 +47,7 @@ func NewFileStorage(path string) (*FileStorage, error) {
 	return fs, nil
 }
 
-func (fs *FileStorage) Store(link model.Link) error {
+func (fs *FileStorage) Store(ctx context.Context, link model.Link) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
@@ -54,17 +55,34 @@ func (fs *FileStorage) Store(link model.Link) error {
 	return fs.save()
 }
 
-func (fs *FileStorage) GetByID(id string) (string, error) {
+func (fs *FileStorage) StoreBatch(ctx context.Context, ls []model.Link) error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	fs.links = append(fs.links, ls...)
+	return fs.save()
+}
+
+func (fs *FileStorage) GetByShortURL(ctx context.Context, shortURL string) (*model.Link, error) {
 	fs.mu.RLock()
 	defer fs.mu.RUnlock()
 
 	for _, link := range fs.links {
-		if link.ShortURL == id {
-			return link.OriginalURL, nil
+		if link.ShortURL == shortURL {
+			return &link, nil
 		}
 	}
 
-	return "", model.ErrNotFound
+	return nil, model.ErrNotFound
+}
+
+func (fs *FileStorage) Ping() error {
+	_, err := os.Stat(fs.path)
+	return err
+}
+
+func (fs *FileStorage) Close() error {
+	return nil
 }
 
 func (fs *FileStorage) save() error {

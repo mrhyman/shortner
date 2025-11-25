@@ -38,18 +38,34 @@ func (h *HTTPHandler) ShortLinkHandler(res http.ResponseWriter, req *http.Reques
 
 	shortURL, err := h.svc.Shorten(req.Context(), originalURL)
 	if err != nil {
+		var existsErr *model.AlreadyExistsError
+
 		switch {
+		case errors.As(err, &existsErr):
+			log.With("err", existsErr.Error()).Error()
+
+			res.Header().Set("Content-Type", "application/json")
+			res.WriteHeader(http.StatusConflict)
+
+			fmt.Fprint(res, existsErr.ShortURL)
+			return
+
 		case errors.Is(err, model.ErrInvalidURL):
 			log.With("err", err.Error()).Warn()
 			http.Error(res, err.Error(), http.StatusBadRequest)
-		case errors.Is(err, model.ErrShortLinkGeneration) || errors.Is(err, model.ErrShortenError):
+			return
+
+		case errors.Is(err, model.ErrShortLinkGeneration),
+			errors.Is(err, model.ErrShortenError):
 			log.With("err", err.Error()).Error()
 			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+
 		default:
 			log.With("err", err.Error()).Error()
 			http.Error(res, model.ErrWentWrong.Error(), http.StatusInternalServerError)
+			return
 		}
-		return
 	}
 
 	res.Header().Set("Content-Type", "text/plain; charset=utf-8")

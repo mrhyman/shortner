@@ -5,13 +5,14 @@ import (
 )
 
 type Link struct {
-	UUID        uuid.UUID
-	ShortURL    string
-	OriginalURL string
+	UUID          uuid.UUID `db:"uuid"`
+	ShortURL      string    `db:"short_url"`
+	OriginalURL   string    `db:"original_url"`
+	CorrelationID string    `db:"correlation_id"`
 }
 
 func NewLink(
-	linkID uuid.UUID, originalURL string, shortURL string,
+	linkID uuid.UUID, originalURL string, shortURL string, correlationID string,
 ) (*Link, error) {
 	if uuid.Nil == linkID {
 		return nil, ErrInvalidLinkID
@@ -26,9 +27,10 @@ func NewLink(
 	}
 
 	link := &Link{
-		UUID:        linkID,
-		OriginalURL: originalURL,
-		ShortURL:    shortURL,
+		UUID:          linkID,
+		OriginalURL:   originalURL,
+		ShortURL:      shortURL,
+		CorrelationID: correlationID,
 	}
 
 	return link, nil

@@ -11,7 +11,7 @@ import (
 
 func (h *HTTPHandler) ExpandHandler(res http.ResponseWriter, req *http.Request) {
 	log := logger.FromContext(req.Context())
-	
+
 	if req.Method != http.MethodGet {
 		log.With("err", model.ErrInvalidRequestParams.Error()).Warn()
 		http.Error(res, model.ErrInvalidRequestParams.Error(), http.StatusMethodNotAllowed)
