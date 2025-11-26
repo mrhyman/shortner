@@ -34,13 +34,18 @@ func SetupMux(h *handler.HTTPHandler) http.Handler {
 	r := chi.NewRouter()
 
 	// buisness logic endpoints
-	r.Post("/", middleware.WithLogging(middleware.WithGzip(h.ShortLinkHandler)))
-	r.Get("/{id}", middleware.WithLogging(middleware.WithGzip(h.ExpandHandler)))
-	r.Post("/api/shorten", middleware.WithLogging(middleware.WithGzip(h.ShortenHandler)))
-	r.Post("/api/shorten/batch", middleware.WithLogging(middleware.WithGzip(h.ShortenBatchHandler)))
+	r.Post("/", defaultMW(h.ShortLinkHandler))
+	r.Get("/{id}", defaultMW(h.ExpandHandler))
+	r.Post("/api/shorten", defaultMW(h.ShortenHandler))
+	r.Post("/api/shorten/batch", defaultMW(h.ShortenBatchHandler))
+	r.Get("/api/user/urls", defaultMW(h.UserURLsHandler))
 
 	// service endpoints
 	r.Get("/ping", middleware.WithLogging(h.PingHandler))
 
 	return r
+}
+
+func defaultMW(h http.HandlerFunc) http.HandlerFunc {
+	return middleware.WithAuth(middleware.WithGzip(middleware.WithLogging(h)))
 }

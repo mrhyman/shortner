@@ -112,6 +112,30 @@ func (s *URLService) ShortenBatch(ctx context.Context, batch []api.ShortenBatchR
 	return links, nil
 }
 
+func (s *URLService) UserURLs(ctx context.Context, userID string) ([]model.Link, error) {
+	links := make([]model.Link, 0, len(userID))
+
+	// for _, item := range len(userID) {
+	// 	shortID, err := generateShortID(8)
+	// 	if err != nil {
+	// 		return nil, model.ErrShortLinkGeneration
+	// 	}
+
+	// 	links = append(links, model.Link{
+	// 		UUID:          uuid.New(),
+	// 		ShortURL:      fmt.Sprintf("%s/%s", s.base, shortID),
+	// 		OriginalURL:   item.OriginalURL,
+	// 		CorrelationID: item.CorrelationID,
+	// 	})
+	// }
+
+	// if err := s.repo.StoreBatch(ctx, links); err != nil {
+	// 	return nil, model.ErrShortenError
+	// }
+
+	return links, nil
+}
+
 func (s *URLService) Ping(ctx context.Context) error {
 	return s.repo.Ping(ctx)
 }

@@ -72,6 +72,13 @@ func (c *compressReader) Close() error {
 	return c.zr.Close()
 }
 
+func (c *gzipWriter) Flush() {
+	c.zw.Flush()
+	if f, ok := c.w.(http.Flusher); ok {
+		f.Flush()
+	}
+}
+
 func WithGzip(next http.HandlerFunc) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		log := logger.FromContext(req.Context())

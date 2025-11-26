@@ -13,7 +13,6 @@ func New(
 
 ) *HTTPHandler {
 	return &HTTPHandler{
-
 		svc: svc,
 	}
 }

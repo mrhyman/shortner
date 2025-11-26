@@ -12,6 +12,7 @@ type URLRepository interface {
 	GetByShortURL(ctx context.Context, shortURL string) (*model.Link, error)
 	Store(ctx context.Context, url string, originalURL string) error
 	StoreBatch(ctx context.Context, links []model.Link) error
+	GetUserLinks(ctx context.Context, userID string) ([]model.Link, error)
 	Ping(ctx context.Context) error
 }
 
@@ -41,4 +42,8 @@ func (r *URLRepo) StoreBatch(ctx context.Context, links []model.Link) error {
 
 func (r *URLRepo) Ping(ctx context.Context) error {
 	return r.storage.Ping()
+}
+
+func (r *URLRepo) GetUserLinks(ctx context.Context, userID string) ([]model.Link, error) {
+	return r.storage.GetUserLinks(ctx, userID)
 }

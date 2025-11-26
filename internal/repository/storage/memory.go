@@ -47,6 +47,10 @@ func (ms *MemoryStorage) GetByShortURL(ctx context.Context, shortURL string) (*m
 	return &v, nil
 }
 
+func (ms *MemoryStorage) GetUserLinks(ctx context.Context, userID string) ([]model.Link, error) {
+	return nil, nil
+}
+
 func (ms *MemoryStorage) Ping() error {
 	return nil
 }

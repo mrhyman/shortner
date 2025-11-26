@@ -15,6 +15,7 @@ const (
 	DefaultBaseURL         = "http://localhost:8080"
 	DefaultFileStoragePath = ""
 	DefaultDBDSN           = ""
+	DefaultHashKey         = "qwerty12345"
 )
 
 type StorageMode int
@@ -30,6 +31,7 @@ type AppConfig struct {
 	BaseURL       string `env:"BASE_URL"`
 	StoragePath   string `env:"FILE_STORAGE_PATH"`
 	DBDSN         string `env:"DATABASE_DSN"`
+	HashKey       string `env:"HASH_KEY"`
 	StorageMode   StorageMode
 }
 
@@ -42,6 +44,7 @@ func Load(ctx context.Context) AppConfig {
 	baseFlag := flag.String("b", DefaultBaseURL, "Base URL for short links, e.g. http://localhost:8080")
 	fileFlag := flag.String("f", DefaultFileStoragePath, "Base storage path, e.g. /.storage/db.json")
 	dbFlag := flag.String("d", DefaultDBDSN, "Database connection string. postgres://postgres:postgres@localhost:5432/postgres")
+	hashKey := flag.String("hk", DefaultHashKey, "Auth hash key. e.g. qwerty12345")
 	flag.Parse()
 
 	if err := env.Parse(&cfg); err != nil {
@@ -67,6 +70,10 @@ func Load(ctx context.Context) AppConfig {
 
 	if cfg.DBDSN == "" {
 		cfg.DBDSN = *dbFlag
+	}
+
+	if cfg.HashKey == "" {
+		cfg.HashKey = *hashKey
 	}
 
 	return setStorageMode(&cfg)

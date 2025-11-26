@@ -76,6 +76,10 @@ func (fs *FileStorage) GetByShortURL(ctx context.Context, shortURL string) (*mod
 	return nil, model.ErrNotFound
 }
 
+func (fs *FileStorage) GetUserLinks(ctx context.Context, userID string) ([]model.Link, error) {
+	return nil, nil
+}
+
 func (fs *FileStorage) Ping() error {
 	_, err := os.Stat(fs.path)
 	return err

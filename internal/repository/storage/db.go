@@ -108,6 +108,10 @@ func (ds *DBStorage) Close() error {
 	return ds.db.Close()
 }
 
+func (ds *DBStorage) GetUserLinks(ctx context.Context, userID string) ([]model.Link, error) {
+	return nil, nil
+}
+
 func (ds *DBStorage) MigrateUp(migrationsDir, dsn string) error {
 	driver, err := postgres.WithInstance(ds.db.DB, &postgres.Config{})
 	if err != nil {

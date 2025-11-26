@@ -22,6 +22,9 @@ var (
 	ErrCompressReading       = errors.New("compress reading error")
 	ErrStorageInit           = errors.New("storage init error")
 	ErrStorageUnavailable    = errors.New("storage unavailable")
+	ErrUnknownUser           = errors.New("userID is not provided")
+	ErrCookieDecoding        = errors.New("can't decode cookie")
+	ErrCookieEncoding        = errors.New("can't encode cookie")
 )
 
 type AlreadyExistsError struct {
