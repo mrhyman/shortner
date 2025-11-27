@@ -47,8 +47,19 @@ func (ms *MemoryStorage) GetByShortURL(ctx context.Context, shortURL string) (*m
 	return &v, nil
 }
 
-func (ms *MemoryStorage) GetUserLinks(ctx context.Context, userID string) ([]model.Link, error) {
-	return nil, nil
+func (ms *MemoryStorage) GetByUserID(ctx context.Context, userID string) ([]model.Link, error) {
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
+
+	var links []model.Link
+
+	for _, link := range ms.url {
+		if link.UserID == userID {
+			links = append(links, link)
+		}
+	}
+
+	return links, nil
 }
 
 func (ms *MemoryStorage) Ping() error {

@@ -97,12 +97,17 @@ func (s *URLService) ShortenBatch(ctx context.Context, batch []api.ShortenBatchR
 			return nil, model.ErrShortLinkGeneration
 		}
 
-		links = append(links, model.Link{
-			UUID:          uuid.New(),
-			ShortURL:      fmt.Sprintf("%s/%s", s.base, shortID),
-			OriginalURL:   item.OriginalURL,
-			CorrelationID: item.CorrelationID,
-		})
+		link, err := model.NewLink(
+			uuid.New(),
+			fmt.Sprintf("%s/%s", s.base, shortID),
+			item.OriginalURL,
+			item.CorrelationID,
+			ctx.Value(model.UserIDKey).(string),
+		)
+		if err != nil {
+			return nil, err
+		}
+		links = append(links, *link)
 	}
 
 	if err := s.repo.StoreBatch(ctx, links); err != nil {
@@ -112,28 +117,8 @@ func (s *URLService) ShortenBatch(ctx context.Context, batch []api.ShortenBatchR
 	return links, nil
 }
 
-func (s *URLService) UserURLs(ctx context.Context, userID string) ([]model.Link, error) {
-	links := make([]model.Link, 0, len(userID))
-
-	// for _, item := range len(userID) {
-	// 	shortID, err := generateShortID(8)
-	// 	if err != nil {
-	// 		return nil, model.ErrShortLinkGeneration
-	// 	}
-
-	// 	links = append(links, model.Link{
-	// 		UUID:          uuid.New(),
-	// 		ShortURL:      fmt.Sprintf("%s/%s", s.base, shortID),
-	// 		OriginalURL:   item.OriginalURL,
-	// 		CorrelationID: item.CorrelationID,
-	// 	})
-	// }
-
-	// if err := s.repo.StoreBatch(ctx, links); err != nil {
-	// 	return nil, model.ErrShortenError
-	// }
-
-	return links, nil
+func (s *URLService) GerUserLinks(ctx context.Context, userID string) ([]model.Link, error) {
+	return s.repo.GetByUserID(ctx, userID)
 }
 
 func (s *URLService) Ping(ctx context.Context) error {

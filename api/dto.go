@@ -18,7 +18,7 @@ type ShortenBatchResponse struct {
 	ShortURL      string `json:"short_url"`
 }
 
-type UserURLsResponse struct {
+type UserLinksResponse struct {
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
 }
