@@ -10,6 +10,7 @@ import (
 	"github.com/mrhyman/shortner/api"
 	"github.com/mrhyman/shortner/internal/config"
 	"github.com/mrhyman/shortner/internal/handler"
+	"github.com/mrhyman/shortner/internal/middleware"
 	"github.com/mrhyman/shortner/internal/repository"
 	"github.com/mrhyman/shortner/internal/repository/storage"
 	"github.com/mrhyman/shortner/internal/service"
@@ -71,6 +72,7 @@ func TestShortenBatchHandler(t *testing.T) {
 			repo := repository.NewURLRepository(store)
 			svc := service.NewURLService(baseURL, repo)
 			h := handler.New(*svc)
+			handlerFunc := middleware.WithAuth(h.ShortenBatchHandler)
 
 			var bodyBytes []byte
 			if tc.body != nil {
@@ -83,9 +85,10 @@ func TestShortenBatchHandler(t *testing.T) {
 
 			req := httptest.NewRequest(tc.method, "/shorten/batch", bytes.NewReader(bodyBytes))
 			req.Header.Set("Content-Type", "application/json")
+
 			rec := httptest.NewRecorder()
 
-			h.ShortenBatchHandler(rec, req)
+			handlerFunc.ServeHTTP(rec, req)
 
 			res := rec.Result()
 			defer res.Body.Close()

@@ -99,8 +99,8 @@ func (s *URLService) ShortenBatch(ctx context.Context, batch []api.ShortenBatchR
 
 		link, err := model.NewLink(
 			uuid.New(),
-			fmt.Sprintf("%s/%s", s.base, shortID),
 			item.OriginalURL,
+			fmt.Sprintf("%s/%s", s.base, shortID),
 			item.CorrelationID,
 			ctx.Value(model.UserIDKey).(string),
 		)

@@ -11,6 +11,7 @@ import (
 	"github.com/mrhyman/shortner/api"
 	"github.com/mrhyman/shortner/internal/config"
 	"github.com/mrhyman/shortner/internal/handler"
+	"github.com/mrhyman/shortner/internal/middleware"
 	"github.com/mrhyman/shortner/internal/model"
 	"github.com/mrhyman/shortner/internal/repository"
 	"github.com/mrhyman/shortner/internal/repository/storage"
@@ -66,6 +67,7 @@ func TestShortenHandler(t *testing.T) {
 			repo := repository.NewURLRepository(store)
 			svc := service.NewURLService(baseURL, repo)
 			h := handler.New(*svc)
+			handlerFunc := middleware.WithAuth(h.ShortenHandler)
 
 			var reqBody []byte
 			switch v := tc.body.(type) {
@@ -84,7 +86,7 @@ func TestShortenHandler(t *testing.T) {
 
 			rec := httptest.NewRecorder()
 
-			h.ShortenHandler(rec, req)
+			handlerFunc.ServeHTTP(rec, req)
 
 			res := rec.Result()
 			defer res.Body.Close()

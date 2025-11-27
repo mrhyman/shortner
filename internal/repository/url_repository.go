@@ -33,12 +33,18 @@ func (r *URLRepo) GetByUserID(ctx context.Context, userID string) ([]model.Link,
 }
 
 func (r *URLRepo) Store(ctx context.Context, shortURL string, originalURL string) error {
+	var userID string
+	userID, ok := ctx.Value(model.UserIDKey).(string)
+	if !ok {
+		userID = ""
+	}
+
 	link, err := model.NewLink(
 		uuid.New(),
 		originalURL,
 		shortURL,
 		"",
-		ctx.Value(model.UserIDKey).(string),
+		userID,
 	)
 	if err != nil {
 		return err

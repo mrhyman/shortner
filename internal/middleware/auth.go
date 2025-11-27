@@ -21,7 +21,6 @@ func WithAuth(next http.HandlerFunc) http.HandlerFunc {
 
 		c, err := req.Cookie("X-USER-ID")
 
-		// 1) Куки нет → создаём новую и продолжаем
 		if err == http.ErrNoCookie {
 			userID := uuid.New().String()
 			val, err := encodeUserID(userID, secret)
@@ -42,10 +41,8 @@ func WithAuth(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		// 2) Кука есть → пробуем декодировать
 		userID, err := decodeCookie(c, secret)
 		if err != nil {
-			// повреждена → делаем новую (НЕ 401)
 			userID = uuid.New().String()
 			val, err := encodeUserID(userID, secret)
 			if err != nil {
@@ -65,14 +62,12 @@ func WithAuth(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		// 3) Кука валидна, но userID пустой → 401
 		if userID == "" {
 			log.With("err", model.ErrUnknownUser.Error()).Warn()
 			res.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
-		// 4) Всё ок — пропускаем дальше
 		ctx := context.WithValue(req.Context(), model.UserIDKey, userID)
 		next.ServeHTTP(res, req.WithContext(ctx))
 	}

@@ -13,6 +13,7 @@ import (
 
 	"github.com/mrhyman/shortner/internal/config"
 	"github.com/mrhyman/shortner/internal/handler"
+	"github.com/mrhyman/shortner/internal/middleware"
 	"github.com/mrhyman/shortner/internal/model"
 	"github.com/mrhyman/shortner/internal/repository"
 	"github.com/mrhyman/shortner/internal/repository/storage"
@@ -79,6 +80,7 @@ func TestHandler_ShortLinkHandler(t *testing.T) {
 			repo := repository.NewURLRepository(store)
 			svc := service.NewURLService(baseURL, repo)
 			h := handler.New(*svc)
+			handlerFunc := middleware.WithAuth(h.ShortLinkHandler)
 
 			req := httptest.NewRequest(tc.method, "/", strings.NewReader(tc.originalURL))
 			if tc.contentType != "" {
@@ -87,7 +89,8 @@ func TestHandler_ShortLinkHandler(t *testing.T) {
 
 			// act
 			rec := httptest.NewRecorder()
-			h.ShortLinkHandler(rec, req)
+			handlerFunc.ServeHTTP(rec, req)
+
 			res := rec.Result()
 			defer res.Body.Close()
 
