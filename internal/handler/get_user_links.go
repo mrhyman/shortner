@@ -9,7 +9,7 @@ import (
 	"github.com/mrhyman/shortner/internal/model"
 )
 
-func (h *HTTPHandler) UserLinksHandler(res http.ResponseWriter, req *http.Request) {
+func (h *HTTPHandler) GetUserLinksHandler(res http.ResponseWriter, req *http.Request) {
 	log := logger.FromContext(req.Context())
 
 	if req.Method != http.MethodGet {

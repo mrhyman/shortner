@@ -13,6 +13,8 @@ type URLRepository interface {
 	Store(ctx context.Context, url string, originalURL string) error
 	StoreBatch(ctx context.Context, links []model.Link) error
 	GetByUserID(ctx context.Context, userID string) ([]model.Link, error)
+	DeleteUserLinksByID(ctx context.Context, links []string) error
+
 	Ping(ctx context.Context) error
 }
 
@@ -32,6 +34,10 @@ func (r *URLRepo) GetByUserID(ctx context.Context, userID string) ([]model.Link,
 	return r.storage.GetByUserID(ctx, userID)
 }
 
+func (r *URLRepo) DeleteUserLinksByID(ctx context.Context, links []string) error {
+	return r.storage.DeleteUserLinksByID(ctx, links)
+}
+
 func (r *URLRepo) Store(ctx context.Context, shortURL string, originalURL string) error {
 	var userID string
 	userID, ok := ctx.Value(model.UserIDKey).(string)
@@ -45,6 +51,7 @@ func (r *URLRepo) Store(ctx context.Context, shortURL string, originalURL string
 		shortURL,
 		"",
 		userID,
+		false,
 	)
 	if err != nil {
 		return err

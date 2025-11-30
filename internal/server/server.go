@@ -38,7 +38,8 @@ func SetupMux(h *handler.HTTPHandler) http.Handler {
 	r.Get("/{id}", defaultMW(h.ExpandHandler))
 	r.Post("/api/shorten", defaultMW(h.ShortenHandler))
 	r.Post("/api/shorten/batch", defaultMW(h.ShortenBatchHandler))
-	r.Get("/api/user/urls", defaultMW(h.UserLinksHandler))
+	r.Get("/api/user/urls", defaultMW(h.GetUserLinksHandler))
+	r.Delete("/api/user/urls", defaultMW(h.DeleteUserLinksHandler))
 
 	// service endpoints
 	r.Get("/ping", middleware.WithLogging(h.PingHandler))

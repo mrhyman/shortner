@@ -103,6 +103,7 @@ func (s *URLService) ShortenBatch(ctx context.Context, batch []api.ShortenBatchR
 			fmt.Sprintf("%s/%s", s.base, shortID),
 			item.CorrelationID,
 			ctx.Value(model.UserIDKey).(string),
+			false,
 		)
 		if err != nil {
 			return nil, err
@@ -119,6 +120,14 @@ func (s *URLService) ShortenBatch(ctx context.Context, batch []api.ShortenBatchR
 
 func (s *URLService) GerUserLinks(ctx context.Context, userID string) ([]model.Link, error) {
 	return s.repo.GetByUserID(ctx, userID)
+}
+
+func (s *URLService) DeleteUserLinksByID(ctx context.Context, links []string) error {
+	formatedLinks := make([]string, len(links))
+	for i, l := range links {
+		formatedLinks[i] = fmt.Sprintf("%s/%s", s.base, l)
+	}
+	return s.repo.DeleteUserLinksByID(ctx, formatedLinks)
 }
 
 func (s *URLService) Ping(ctx context.Context) error {

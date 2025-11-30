@@ -11,6 +11,7 @@ type Storage interface {
 	GetByUserID(ctx context.Context, userID string) ([]model.Link, error)
 	Store(ctx context.Context, link model.Link) error
 	StoreBatch(ctx context.Context, links []model.Link) error
+	DeleteUserLinksByID(ctx context.Context, links []string) error
 	Ping() error
 	Close() error
 }

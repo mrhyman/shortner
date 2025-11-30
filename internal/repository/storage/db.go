@@ -115,6 +115,33 @@ func (ds *DBStorage) GetByUserID(ctx context.Context, userID string) ([]model.Li
 	return links, nil
 }
 
+func (ds *DBStorage) DeleteUserLinksByID(ctx context.Context, links []string) error {
+	userID := ctx.Value(model.UserIDKey).(string)
+
+	tx, err := ds.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.PrepareContext(ctx, `
+		UPDATE links SET is_deleted=true 
+		WHERE short_url = ANY($1)
+		AND user_id = $2
+	`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.ExecContext(ctx, pq.Array(links), userID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
 func (ds *DBStorage) Ping() error {
 	return ds.db.Ping()
 }
