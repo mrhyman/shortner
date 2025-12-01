@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/mrhyman/shortner/api"
+	"github.com/mrhyman/shortner/internal/logger"
 	"github.com/mrhyman/shortner/internal/model"
 	"github.com/mrhyman/shortner/internal/repository"
 )
@@ -54,6 +55,10 @@ func (s *URLService) Expand(ctx context.Context, shortURL string) (string, error
 	link, err := s.repo.GetByShortURL(ctx, rr)
 	if err != nil {
 		return "", model.ErrNotFound
+	}
+
+	if link.IsDeleted {
+		return "", model.ErrLinkIsGone
 	}
 
 	return link.OriginalURL, nil
@@ -122,12 +127,35 @@ func (s *URLService) GerUserLinks(ctx context.Context, userID string) ([]model.L
 	return s.repo.GetByUserID(ctx, userID)
 }
 
-func (s *URLService) DeleteUserLinksByID(ctx context.Context, links []string) error {
+func (s *URLService) DeleteUserLinksByID(ctx context.Context, links []string) {
+	jobs := make(chan []string)
+	const batchSize = 100
+	const workers = 4
+
+	ctx = context.WithoutCancel(ctx)
+	log := logger.FromContext(ctx)
+
 	formatedLinks := make([]string, len(links))
 	for i, l := range links {
 		formatedLinks[i] = fmt.Sprintf("%s/%s", s.base, l)
 	}
-	return s.repo.DeleteUserLinksByID(ctx, formatedLinks)
+
+	for range workers {
+		go func() {
+			for batch := range jobs {
+				if err := s.repo.DeleteUserLinksByID(ctx, batch); err != nil {
+					log.With("err", err.Error()).Warn()
+				}
+			}
+		}()
+	}
+
+	for start := 0; start < len(formatedLinks); start += batchSize {
+		end := min(start+batchSize, len(formatedLinks))
+		jobs <- formatedLinks[start:end]
+	}
+
+	close(jobs)
 }
 
 func (s *URLService) Ping(ctx context.Context) error {

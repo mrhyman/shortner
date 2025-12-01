@@ -10,6 +10,7 @@ var (
 	ErrInvalidURL            = errors.New("provided url is not valid string")
 	ErrInvalidName           = errors.New("provided name is not valid string")
 	ErrNotFound              = errors.New("url not found")
+	ErrLinkIsGone            = errors.New("link is gone")
 	ErrShortLinkGeneration   = errors.New("short link generation error")
 	ErrShortenError          = errors.New("shorten error")
 	ErrInvalidRequestParams  = errors.New("invalid request params")

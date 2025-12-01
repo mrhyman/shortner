@@ -25,11 +25,7 @@ func (h *HTTPHandler) DeleteUserLinksHandler(res http.ResponseWriter, req *http.
 		return
 	}
 
-	if err := h.svc.DeleteUserLinksByID(req.Context(), links); err != nil {
-		log.With("err", err.Error()).Error()
-		http.Error(res, model.ErrWentWrong.Error(), http.StatusInternalServerError)
-		return
-	}
+	h.svc.DeleteUserLinksByID(req.Context(), links)
 
 	res.WriteHeader(http.StatusAccepted)
 }
