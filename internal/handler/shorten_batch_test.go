@@ -72,7 +72,7 @@ func TestShortenBatchHandler(t *testing.T) {
 			repo := repository.NewURLRepository(store)
 			svc := service.NewURLService(baseURL, repo)
 			h := handler.New(*svc)
-			handlerFunc := middleware.WithAuth(h.ShortenBatchHandler)
+			handlerFunc := middleware.WithAuth(config.DefaultHashKey)(h.ShortenBatchHandler)
 
 			var bodyBytes []byte
 			if tc.body != nil {

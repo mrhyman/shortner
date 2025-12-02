@@ -14,66 +14,67 @@ import (
 	"github.com/mrhyman/shortner/internal/model"
 )
 
-func WithAuth(next http.HandlerFunc) http.HandlerFunc {
-	return func(res http.ResponseWriter, req *http.Request) {
-		secret := "qwerty12345"
-		log := logger.FromContext(req.Context())
+func WithAuth(secret string) func(http.HandlerFunc) http.HandlerFunc {
+	return func(next http.HandlerFunc) http.HandlerFunc {
+		return func(res http.ResponseWriter, req *http.Request) {
+			log := logger.FromContext(req.Context())
 
-		c, err := req.Cookie("X-USER-ID")
+			c, err := req.Cookie("X-USER-ID")
 
-		if err == http.ErrNoCookie {
-			userID := uuid.New().String()
-			val, err := encodeUserID(userID, secret)
-			if err != nil {
-				http.Error(res, model.ErrWentWrong.Error(), http.StatusInternalServerError)
+			if err == http.ErrNoCookie {
+				userID := uuid.New().String()
+				v, err := EncodeUserID(userID, secret)
+				if err != nil {
+					http.Error(res, model.ErrWentWrong.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				http.SetCookie(res, &http.Cookie{
+					Name:     "X-USER-ID",
+					Value:    v,
+					Path:     "/",
+					HttpOnly: true,
+				})
+
+				ctx := context.WithValue(req.Context(), model.UserIDKey, userID)
+				next.ServeHTTP(res, req.WithContext(ctx))
 				return
 			}
 
-			http.SetCookie(res, &http.Cookie{
-				Name:     "X-USER-ID",
-				Value:    val,
-				Path:     "/",
-				HttpOnly: true,
-			})
-
-			ctx := context.WithValue(req.Context(), model.UserIDKey, userID)
-			next.ServeHTTP(res, req.WithContext(ctx))
-			return
-		}
-
-		userID, err := decodeCookie(c, secret)
-		if err != nil {
-			userID = uuid.New().String()
-			val, err := encodeUserID(userID, secret)
+			userID, err := DecodeCookie(c, secret)
 			if err != nil {
-				http.Error(res, model.ErrWentWrong.Error(), http.StatusInternalServerError)
+				userID = uuid.New().String()
+				val, err := EncodeUserID(userID, secret)
+				if err != nil {
+					http.Error(res, model.ErrWentWrong.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				http.SetCookie(res, &http.Cookie{
+					Name:     "X-USER-ID",
+					Value:    val,
+					Path:     "/",
+					HttpOnly: true,
+				})
+
+				ctx := context.WithValue(req.Context(), model.UserIDKey, userID)
+				next.ServeHTTP(res, req.WithContext(ctx))
 				return
 			}
 
-			http.SetCookie(res, &http.Cookie{
-				Name:     "X-USER-ID",
-				Value:    val,
-				Path:     "/",
-				HttpOnly: true,
-			})
+			if userID == "" {
+				log.With("err", model.ErrUnknownUser.Error()).Warn()
+				res.WriteHeader(http.StatusUnauthorized)
+				return
+			}
 
 			ctx := context.WithValue(req.Context(), model.UserIDKey, userID)
 			next.ServeHTTP(res, req.WithContext(ctx))
-			return
 		}
-
-		if userID == "" {
-			log.With("err", model.ErrUnknownUser.Error()).Warn()
-			res.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
-		ctx := context.WithValue(req.Context(), model.UserIDKey, userID)
-		next.ServeHTTP(res, req.WithContext(ctx))
 	}
 }
 
-func decodeCookie(cookie *http.Cookie, secret string) (string, error) {
+func DecodeCookie(cookie *http.Cookie, secret string) (string, error) {
 	key := sha256.Sum256([]byte(secret))
 	aesblock, err := aes.NewCipher(key[:])
 	if err != nil {
@@ -100,7 +101,7 @@ func decodeCookie(cookie *http.Cookie, secret string) (string, error) {
 	return string(plain), nil
 }
 
-func encodeUserID(userID string, secret string) (string, error) {
+func EncodeUserID(userID string, secret string) (string, error) {
 	key := sha256.Sum256([]byte(secret))
 	aesblock, err := aes.NewCipher(key[:])
 	if err != nil {

@@ -67,7 +67,7 @@ func TestShortenHandler(t *testing.T) {
 			repo := repository.NewURLRepository(store)
 			svc := service.NewURLService(baseURL, repo)
 			h := handler.New(*svc)
-			handlerFunc := middleware.WithAuth(h.ShortenHandler)
+			handlerFunc := middleware.WithAuth(config.DefaultHashKey)(h.ShortenHandler)
 
 			var reqBody []byte
 			switch v := tc.body.(type) {

@@ -30,7 +30,7 @@ func main() {
 	repo := repository.NewURLRepository(store)
 	svc := service.NewURLService(cfg.BaseURL, repo)
 	h := handler.New(*svc)
-	s := server.New(cfg.ServerAddress, *h)
+	s := server.New(cfg, *h)
 
 	s.Start(ctx)
 }

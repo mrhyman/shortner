@@ -80,7 +80,7 @@ func TestHandler_ShortLinkHandler(t *testing.T) {
 			repo := repository.NewURLRepository(store)
 			svc := service.NewURLService(baseURL, repo)
 			h := handler.New(*svc)
-			handlerFunc := middleware.WithAuth(h.ShortLinkHandler)
+			handlerFunc := middleware.WithAuth(config.DefaultHashKey)(h.ShortLinkHandler)
 
 			req := httptest.NewRequest(tc.method, "/", strings.NewReader(tc.originalURL))
 			if tc.contentType != "" {
@@ -113,7 +113,7 @@ func TestHandler_ShortLinkHandler(t *testing.T) {
 
 				v, _ := store.GetByShortURL(ctx, shortURL)
 				if v.OriginalURL != tc.originalURL {
-					t.Errorf("[%s] expected %q, got %q", tc.name, tc.originalURL, v)
+					t.Errorf("[%s] expected %q, got %q", tc.name, tc.originalURL, v.OriginalURL)
 				}
 			}
 		})
