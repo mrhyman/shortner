@@ -9,9 +9,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/mrhyman/shortner/api"
+	"github.com/mrhyman/shortner/internal/auth"
 	"github.com/mrhyman/shortner/internal/config"
 	"github.com/mrhyman/shortner/internal/handler"
-	"github.com/mrhyman/shortner/internal/middleware"
 	"github.com/mrhyman/shortner/internal/model"
 	"github.com/mrhyman/shortner/internal/repository"
 	"github.com/mrhyman/shortner/internal/repository/storage"
@@ -28,6 +28,7 @@ func TestHandler_GetUserLinksHandler(t *testing.T) {
 		expectedLinks  []api.UserLinksResponse
 	}
 
+	ce, _ := auth.NewCookieEncoder(config.DefaultHashKey)
 	userID := uuid.New().String()
 
 	cases := []testCase{
@@ -75,7 +76,7 @@ func TestHandler_GetUserLinksHandler(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			userHash, _ := middleware.EncodeUserID(tc.userID, config.DefaultHashKey)
+			userHash, _ := ce.EncodeUserID(tc.userID)
 			ctx := context.WithValue(context.Background(), model.UserIDKey, userHash)
 
 			store := storage.NewMemoryStorage()

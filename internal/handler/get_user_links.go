@@ -18,7 +18,13 @@ func (h *HTTPHandler) GetUserLinksHandler(res http.ResponseWriter, req *http.Req
 		return
 	}
 
-	links, err := h.svc.GerUserLinks(req.Context(), req.Context().Value(model.UserIDKey).(string))
+	userID, ok := req.Context().Value(model.UserIDKey).(string)
+	if !ok {
+		http.Error(res, model.ErrUnknownUser.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	links, err := h.svc.GetUserLinks(req.Context(), userID)
 	if err != nil {
 		log.With("err", err.Error()).Error()
 		http.Error(res, model.ErrWentWrong.Error(), http.StatusInternalServerError)

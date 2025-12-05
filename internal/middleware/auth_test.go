@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/mrhyman/shortner/internal/auth"
 	"github.com/mrhyman/shortner/internal/config"
 	"github.com/mrhyman/shortner/internal/middleware"
 	"github.com/mrhyman/shortner/internal/model"
@@ -12,6 +13,7 @@ import (
 
 func TestWithAuth(t *testing.T) {
 	secret := config.DefaultHashKey
+	ce, _ := auth.NewCookieEncoder(secret)
 
 	// простая конечная handler-функция для проверки контекста
 	nextHandler := http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
@@ -39,7 +41,7 @@ func TestWithAuth(t *testing.T) {
 		{
 			name: "Valid cookie -> use existing",
 			setupCookie: func() *http.Cookie {
-				val, _ := middleware.EncodeUserID("existing-user", secret)
+				val, _ := ce.EncodeUserID("existing-user")
 				return &http.Cookie{Name: "X-USER-ID", Value: val}
 			},
 			expectedStatus:  http.StatusOK,

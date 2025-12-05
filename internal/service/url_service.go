@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"net/url"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/mrhyman/shortner/api"
@@ -102,12 +103,14 @@ func (s *URLService) ShortenBatch(ctx context.Context, batch []api.ShortenBatchR
 			return nil, model.ErrShortLinkGeneration
 		}
 
+		userID, _ := ctx.Value(model.UserIDKey).(string)
+
 		link, err := model.NewLink(
 			uuid.New(),
 			item.OriginalURL,
 			fmt.Sprintf("%s/%s", s.base, shortID),
 			item.CorrelationID,
-			ctx.Value(model.UserIDKey).(string),
+			userID,
 			false,
 		)
 		if err != nil {
@@ -123,7 +126,7 @@ func (s *URLService) ShortenBatch(ctx context.Context, batch []api.ShortenBatchR
 	return links, nil
 }
 
-func (s *URLService) GerUserLinks(ctx context.Context, userID string) ([]model.Link, error) {
+func (s *URLService) GetUserLinks(ctx context.Context, userID string) ([]model.Link, error) {
 	return s.repo.GetByUserID(ctx, userID)
 }
 
@@ -140,8 +143,12 @@ func (s *URLService) DeleteUserLinksByID(ctx context.Context, links []string) {
 		formatedLinks[i] = fmt.Sprintf("%s/%s", s.base, l)
 	}
 
+	var wg sync.WaitGroup
 	for range workers {
+		wg.Add(1)
+
 		go func() {
+			defer wg.Done()
 			for batch := range jobs {
 				if err := s.repo.DeleteUserLinksByID(ctx, batch); err != nil {
 					log.With("err", err.Error()).Warn()
@@ -156,6 +163,7 @@ func (s *URLService) DeleteUserLinksByID(ctx context.Context, links []string) {
 	}
 
 	close(jobs)
+	wg.Wait()
 }
 
 func (s *URLService) Ping(ctx context.Context) error {

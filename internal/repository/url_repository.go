@@ -39,11 +39,7 @@ func (r *URLRepo) DeleteUserLinksByID(ctx context.Context, links []string) error
 }
 
 func (r *URLRepo) Store(ctx context.Context, shortURL string, originalURL string) error {
-	var userID string
-	userID, ok := ctx.Value(model.UserIDKey).(string)
-	if !ok {
-		userID = ""
-	}
+	userID, _ := ctx.Value(model.UserIDKey).(string)
 
 	link, err := model.NewLink(
 		uuid.New(),

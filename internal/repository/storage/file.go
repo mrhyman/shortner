@@ -92,7 +92,11 @@ func (fs *FileStorage) GetByUserID(ctx context.Context, userID string) ([]model.
 }
 
 func (fs *FileStorage) DeleteUserLinksByID(ctx context.Context, links []string) error {
-	userID := ctx.Value(model.UserIDKey).(string)
+	userID, ok := ctx.Value(model.UserIDKey).(string)
+	if !ok {
+		return model.ErrUnknownUser
+	}
+
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 

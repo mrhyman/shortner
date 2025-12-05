@@ -2,14 +2,10 @@ package middleware
 
 import (
 	"context"
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/hex"
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/mrhyman/shortner/internal/auth"
 	"github.com/mrhyman/shortner/internal/logger"
 	"github.com/mrhyman/shortner/internal/model"
 )
@@ -19,11 +15,18 @@ func WithAuth(secret string) func(http.HandlerFunc) http.HandlerFunc {
 		return func(res http.ResponseWriter, req *http.Request) {
 			log := logger.FromContext(req.Context())
 
+			ce, err := auth.NewCookieEncoder(secret)
+			if err != nil {
+				log.With("err", err.Error()).Warn()
+				http.Error(res, model.ErrWentWrong.Error(), http.StatusInternalServerError)
+				return
+			}
+
 			c, err := req.Cookie("X-USER-ID")
 
 			if err == http.ErrNoCookie {
 				userID := uuid.New().String()
-				v, err := EncodeUserID(userID, secret)
+				v, err := ce.EncodeUserID(userID)
 				if err != nil {
 					http.Error(res, model.ErrWentWrong.Error(), http.StatusInternalServerError)
 					return
@@ -41,10 +44,10 @@ func WithAuth(secret string) func(http.HandlerFunc) http.HandlerFunc {
 				return
 			}
 
-			userID, err := DecodeCookie(c, secret)
+			userID, err := ce.DecodeUserID(c)
 			if err != nil {
 				userID = uuid.New().String()
-				val, err := EncodeUserID(userID, secret)
+				val, err := ce.EncodeUserID(userID)
 				if err != nil {
 					http.Error(res, model.ErrWentWrong.Error(), http.StatusInternalServerError)
 					return
@@ -72,53 +75,4 @@ func WithAuth(secret string) func(http.HandlerFunc) http.HandlerFunc {
 			next.ServeHTTP(res, req.WithContext(ctx))
 		}
 	}
-}
-
-func DecodeCookie(cookie *http.Cookie, secret string) (string, error) {
-	key := sha256.Sum256([]byte(secret))
-	aesblock, err := aes.NewCipher(key[:])
-	if err != nil {
-		return "", model.ErrCookieDecoding
-	}
-	aesgcm, err := cipher.NewGCM(aesblock)
-	if err != nil {
-		return "", model.ErrCookieDecoding
-	}
-
-	data, err := hex.DecodeString(cookie.Value)
-	if err != nil {
-		return "", model.ErrCookieDecoding
-	}
-
-	nonce := data[:aesgcm.NonceSize()]
-	ciphertext := data[aesgcm.NonceSize():]
-
-	plain, err := aesgcm.Open(nil, nonce, ciphertext, nil)
-	if err != nil {
-		return "", model.ErrCookieDecoding
-	}
-
-	return string(plain), nil
-}
-
-func EncodeUserID(userID string, secret string) (string, error) {
-	key := sha256.Sum256([]byte(secret))
-	aesblock, err := aes.NewCipher(key[:])
-	if err != nil {
-		return "", model.ErrCookieEncoding
-	}
-	aesgcm, err := cipher.NewGCM(aesblock)
-	if err != nil {
-		return "", model.ErrCookieEncoding
-	}
-
-	nonce := make([]byte, aesgcm.NonceSize())
-	if _, err := rand.Read(nonce); err != nil {
-		return "", model.ErrCookieEncoding
-	}
-
-	encrypted := aesgcm.Seal(nil, nonce, []byte(userID), nil)
-	cookieValue := hex.EncodeToString(append(nonce, encrypted...))
-
-	return cookieValue, nil
 }
