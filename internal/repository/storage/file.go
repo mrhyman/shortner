@@ -76,6 +76,48 @@ func (fs *FileStorage) GetByShortURL(ctx context.Context, shortURL string) (*mod
 	return nil, model.ErrNotFound
 }
 
+func (fs *FileStorage) GetByUserID(ctx context.Context, userID string) ([]model.Link, error) {
+	fs.mu.RLock()
+	defer fs.mu.RUnlock()
+
+	var links []model.Link
+
+	for _, link := range fs.links {
+		if link.UserID == userID {
+			links = append(links, link)
+		}
+	}
+
+	return links, nil
+}
+
+func (fs *FileStorage) DeleteUserLinksByID(ctx context.Context, links []string) error {
+	userID, ok := ctx.Value(model.UserIDKey).(string)
+	if !ok {
+		return model.ErrUnknownUser
+	}
+
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	toDelete := make(map[string]struct{}, len(links))
+	for _, l := range links {
+		toDelete[l] = struct{}{}
+	}
+
+	for i := range fs.links {
+		if fs.links[i].UserID != userID {
+			continue
+		}
+
+		if _, ok := toDelete[fs.links[i].ShortURL]; ok {
+			fs.links[i].IsDeleted = true
+		}
+	}
+
+	return fs.save()
+}
+
 func (fs *FileStorage) Ping() error {
 	_, err := os.Stat(fs.path)
 	return err

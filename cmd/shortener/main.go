@@ -15,9 +15,6 @@ import (
 	"github.com/mrhyman/shortner/internal/service"
 )
 
-var store storage.Storage
-var err error
-
 func main() {
 	ctx := context.Background()
 	log := logger.New()
@@ -33,12 +30,15 @@ func main() {
 	repo := repository.NewURLRepository(store)
 	svc := service.NewURLService(cfg.BaseURL, repo)
 	h := handler.New(*svc)
-	s := server.New(cfg.ServerAddress, *h)
+	s := server.New(cfg, *h)
 
 	s.Start(ctx)
 }
 
 func initStorage(ctx context.Context, cfg config.AppConfig) storage.Storage {
+	var store storage.Storage
+	var err error
+
 	log := logger.FromContext(ctx)
 
 	switch cfg.StorageMode {

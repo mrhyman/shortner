@@ -9,10 +9,17 @@ type Link struct {
 	ShortURL      string    `db:"short_url"`
 	OriginalURL   string    `db:"original_url"`
 	CorrelationID string    `db:"correlation_id"`
+	UserID        string    `db:"user_id"`
+	IsDeleted     bool      `db:"is_deleted"`
 }
 
 func NewLink(
-	linkID uuid.UUID, originalURL string, shortURL string, correlationID string,
+	linkID uuid.UUID,
+	originalURL string,
+	shortURL string,
+	correlationID string,
+	userID string,
+	isDeleted bool,
 ) (*Link, error) {
 	if uuid.Nil == linkID {
 		return nil, ErrInvalidLinkID
@@ -31,6 +38,8 @@ func NewLink(
 		OriginalURL:   originalURL,
 		ShortURL:      shortURL,
 		CorrelationID: correlationID,
+		UserID:        userID,
+		IsDeleted:     isDeleted,
 	}
 
 	return link, nil

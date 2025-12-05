@@ -36,8 +36,8 @@ func NewDBStorage(dsn string) (*DBStorage, error) {
 
 func (ds *DBStorage) Store(ctx context.Context, l model.Link) error {
 	if _, err := ds.db.ExecContext(ctx,
-		"INSERT INTO links (uuid, short_url, original_url) VALUES ($1, $2, $3)",
-		l.UUID, l.ShortURL, l.OriginalURL,
+		"INSERT INTO links (uuid, short_url, original_url, user_id) VALUES ($1, $2, $3, $4)",
+		l.UUID, l.ShortURL, l.OriginalURL, l.UserID,
 	); err != nil {
 		return ds.convertPgError(ctx, l, err)
 	}
@@ -52,8 +52,8 @@ func (ds *DBStorage) StoreBatch(ctx context.Context, ls []model.Link) error {
 	defer tx.Rollback()
 
 	stmt, err := tx.PrepareContext(ctx, `
-		INSERT INTO links (uuid, short_url, original_url, correlation_id)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO links (uuid, short_url, original_url, correlation_id, user_id)
+		VALUES ($1, $2, $3, $4, $5)
 	`)
 	if err != nil {
 		return err
@@ -61,7 +61,7 @@ func (ds *DBStorage) StoreBatch(ctx context.Context, ls []model.Link) error {
 	defer stmt.Close()
 
 	for _, link := range ls {
-		_, err := stmt.ExecContext(ctx, link.UUID, link.ShortURL, link.OriginalURL, link.CorrelationID)
+		_, err := stmt.ExecContext(ctx, link.UUID, link.ShortURL, link.OriginalURL, link.CorrelationID, link.UserID)
 		if err != nil {
 			return err
 		}
@@ -98,6 +98,51 @@ func (ds *DBStorage) GetByOriginalURL(ctx context.Context, originURL string) (*m
 	}
 
 	return &link, nil
+}
+
+func (ds *DBStorage) GetByUserID(ctx context.Context, userID string) ([]model.Link, error) {
+	var links []model.Link
+
+	err := ds.db.Select(
+		&links,
+		`SELECT * FROM links WHERE user_id = $1`,
+		userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return links, nil
+}
+
+func (ds *DBStorage) DeleteUserLinksByID(ctx context.Context, links []string) error {
+	userID, ok := ctx.Value(model.UserIDKey).(string)
+	if !ok {
+		return model.ErrUnknownUser
+	}
+
+	tx, err := ds.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.PrepareContext(ctx, `
+		UPDATE links SET is_deleted=true 
+		WHERE short_url = ANY($1)
+		AND user_id = $2
+	`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.ExecContext(ctx, pq.Array(links), userID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (ds *DBStorage) Ping() error {

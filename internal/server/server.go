@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/mrhyman/shortner/internal/config"
 	"github.com/mrhyman/shortner/internal/handler"
 	"github.com/mrhyman/shortner/internal/logger"
 	"github.com/mrhyman/shortner/internal/middleware"
@@ -14,11 +15,11 @@ type Server struct {
 	Instance *http.Server
 }
 
-func New(baseURL string, h handler.HTTPHandler) *Server {
+func New(cfg config.AppConfig, h handler.HTTPHandler) *Server {
 	return &Server{
 		Instance: &http.Server{
-			Addr:    baseURL,
-			Handler: SetupMux(&h),
+			Addr:    cfg.ServerAddress,
+			Handler: SetupMux(&h, cfg),
 		},
 	}
 }
@@ -30,17 +31,30 @@ func (s *Server) Start(ctx context.Context) {
 	}
 }
 
-func SetupMux(h *handler.HTTPHandler) http.Handler {
+func SetupMux(h *handler.HTTPHandler, cfg config.AppConfig) http.Handler {
 	r := chi.NewRouter()
+	dmw := DefaultMiddleware(cfg)
 
 	// buisness logic endpoints
-	r.Post("/", middleware.WithLogging(middleware.WithGzip(h.ShortLinkHandler)))
-	r.Get("/{id}", middleware.WithLogging(middleware.WithGzip(h.ExpandHandler)))
-	r.Post("/api/shorten", middleware.WithLogging(middleware.WithGzip(h.ShortenHandler)))
-	r.Post("/api/shorten/batch", middleware.WithLogging(middleware.WithGzip(h.ShortenBatchHandler)))
+	r.Post("/", dmw(h.ShortLinkHandler))
+	r.Get("/{id}", dmw(h.ExpandHandler))
+	r.Post("/api/shorten", dmw(h.ShortenHandler))
+	r.Post("/api/shorten/batch", dmw(h.ShortenBatchHandler))
+	r.Get("/api/user/urls", dmw(h.GetUserLinksHandler))
+	r.Delete("/api/user/urls", dmw(h.DeleteUserLinksHandler))
 
 	// service endpoints
 	r.Get("/ping", middleware.WithLogging(h.PingHandler))
 
 	return r
+}
+
+func DefaultMiddleware(cfg config.AppConfig) func(http.HandlerFunc) http.HandlerFunc {
+	return func(h http.HandlerFunc) http.HandlerFunc {
+		return middleware.WithAuth(cfg.HashKey)(
+			middleware.WithGzip(
+				middleware.WithLogging(h),
+			),
+		)
+	}
 }

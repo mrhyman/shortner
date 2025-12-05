@@ -29,6 +29,9 @@ func (h *HTTPHandler) ExpandHandler(res http.ResponseWriter, req *http.Request) 
 		case errors.Is(err, model.ErrNotFound):
 			log.With("err", err.Error()).Error()
 			http.Error(res, err.Error(), http.StatusInternalServerError)
+		case errors.Is(err, model.ErrLinkIsGone):
+			log.With("err", err.Error()).Error()
+			http.Error(res, err.Error(), http.StatusGone)
 		default:
 			log.With("err", err.Error()).Error()
 			http.Error(res, model.ErrWentWrong.Error(), http.StatusInternalServerError)

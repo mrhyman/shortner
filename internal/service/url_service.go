@@ -5,9 +5,11 @@ import (
 	"crypto/rand"
 	"fmt"
 	"net/url"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/mrhyman/shortner/api"
+	"github.com/mrhyman/shortner/internal/logger"
 	"github.com/mrhyman/shortner/internal/model"
 	"github.com/mrhyman/shortner/internal/repository"
 )
@@ -56,6 +58,10 @@ func (s *URLService) Expand(ctx context.Context, shortURL string) (string, error
 		return "", model.ErrNotFound
 	}
 
+	if link.IsDeleted {
+		return "", model.ErrLinkIsGone
+	}
+
 	return link.OriginalURL, nil
 }
 
@@ -97,12 +103,20 @@ func (s *URLService) ShortenBatch(ctx context.Context, batch []api.ShortenBatchR
 			return nil, model.ErrShortLinkGeneration
 		}
 
-		links = append(links, model.Link{
-			UUID:          uuid.New(),
-			ShortURL:      fmt.Sprintf("%s/%s", s.base, shortID),
-			OriginalURL:   item.OriginalURL,
-			CorrelationID: item.CorrelationID,
-		})
+		userID, _ := ctx.Value(model.UserIDKey).(string)
+
+		link, err := model.NewLink(
+			uuid.New(),
+			item.OriginalURL,
+			fmt.Sprintf("%s/%s", s.base, shortID),
+			item.CorrelationID,
+			userID,
+			false,
+		)
+		if err != nil {
+			return nil, err
+		}
+		links = append(links, *link)
 	}
 
 	if err := s.repo.StoreBatch(ctx, links); err != nil {
@@ -110,6 +124,46 @@ func (s *URLService) ShortenBatch(ctx context.Context, batch []api.ShortenBatchR
 	}
 
 	return links, nil
+}
+
+func (s *URLService) GetUserLinks(ctx context.Context, userID string) ([]model.Link, error) {
+	return s.repo.GetByUserID(ctx, userID)
+}
+
+func (s *URLService) DeleteUserLinksByID(ctx context.Context, links []string) {
+	jobs := make(chan []string)
+	const batchSize = 100
+	const workers = 4
+
+	ctx = context.WithoutCancel(ctx)
+	log := logger.FromContext(ctx)
+
+	formatedLinks := make([]string, len(links))
+	for i, l := range links {
+		formatedLinks[i] = fmt.Sprintf("%s/%s", s.base, l)
+	}
+
+	var wg sync.WaitGroup
+	for range workers {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+			for batch := range jobs {
+				if err := s.repo.DeleteUserLinksByID(ctx, batch); err != nil {
+					log.With("err", err.Error()).Warn()
+				}
+			}
+		}()
+	}
+
+	for start := 0; start < len(formatedLinks); start += batchSize {
+		end := min(start+batchSize, len(formatedLinks))
+		jobs <- formatedLinks[start:end]
+	}
+
+	close(jobs)
+	wg.Wait()
 }
 
 func (s *URLService) Ping(ctx context.Context) error {

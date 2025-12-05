@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mrhyman/shortner/internal/logger"
+	"github.com/mrhyman/shortner/internal/model"
 )
 
 type logWriter struct {
@@ -47,12 +48,15 @@ func WithLogging(next http.HandlerFunc) http.HandlerFunc {
 
 		duration := time.Since(start)
 
+		userID := req.Context().Value(model.UserIDKey)
+
 		logger.FromContext(req.Context()).With(
 			"uri", routePattern,
 			"method", method,
 			"status", rw.status,
 			"size", rw.size,
 			"duration", duration.String(),
+			"userID", userID,
 		).Info()
 	}
 }
