@@ -30,7 +30,12 @@ func main() {
 	repo := repository.NewURLRepository(store)
 	svc := service.NewURLService(cfg.BaseURL, repo)
 	h := handler.New(*svc)
-	s := server.New(cfg, *h)
+
+	s, cleanup, err := server.New(cfg, *h)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer cleanup()
 
 	s.Start(ctx)
 }

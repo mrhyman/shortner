@@ -9,19 +9,25 @@ import (
 	"github.com/mrhyman/shortner/internal/handler"
 	"github.com/mrhyman/shortner/internal/logger"
 	"github.com/mrhyman/shortner/internal/middleware"
+	"github.com/mrhyman/shortner/internal/observer"
 )
 
 type Server struct {
 	Instance *http.Server
 }
 
-func New(cfg config.AppConfig, h handler.HTTPHandler) *Server {
+func New(cfg config.AppConfig, h handler.HTTPHandler) (*Server, func() error, error) {
+	pub, cleanup, err := observer.SetupObservers(cfg)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	return &Server{
 		Instance: &http.Server{
 			Addr:    cfg.ServerAddress,
-			Handler: SetupMux(&h, cfg),
+			Handler: SetupMux(&h, cfg, pub),
 		},
-	}
+	}, cleanup, nil
 }
 
 func (s *Server) Start(ctx context.Context) {
@@ -31,9 +37,9 @@ func (s *Server) Start(ctx context.Context) {
 	}
 }
 
-func SetupMux(h *handler.HTTPHandler, cfg config.AppConfig) http.Handler {
+func SetupMux(h *handler.HTTPHandler, cfg config.AppConfig, pub *observer.Publisher) http.Handler {
 	r := chi.NewRouter()
-	dmw := DefaultMiddleware(cfg)
+	dmw := DefaultMiddleware(cfg, pub)
 
 	// buisness logic endpoints
 	r.Post("/", dmw(h.ShortLinkHandler))
@@ -49,12 +55,12 @@ func SetupMux(h *handler.HTTPHandler, cfg config.AppConfig) http.Handler {
 	return r
 }
 
-func DefaultMiddleware(cfg config.AppConfig) func(http.HandlerFunc) http.HandlerFunc {
+func DefaultMiddleware(cfg config.AppConfig, pub *observer.Publisher) func(http.HandlerFunc) http.HandlerFunc {
 	return func(h http.HandlerFunc) http.HandlerFunc {
-		return middleware.WithAuth(cfg.HashKey)(
+		return middleware.WithAudit(pub)(middleware.WithAuth(cfg.HashKey)(
 			middleware.WithGzip(
 				middleware.WithLogging(h),
 			),
-		)
+		))
 	}
 }
