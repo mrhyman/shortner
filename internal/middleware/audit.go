@@ -21,7 +21,7 @@ func WithAudit(pub *observer.Publisher) func(http.HandlerFunc) http.HandlerFunc 
 			userID, _ := req.Context().Value("userID").(string)
 
 			pub.Notify(observer.Event{
-				Ts:     start,
+				TS:     start,
 				Action: observer.ActionShorten,
 				UserID: userID,
 				URL:    req.URL.String(),

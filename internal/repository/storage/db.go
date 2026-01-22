@@ -15,27 +15,27 @@ import (
 )
 
 type DBStorage struct {
-	db *sqlx.DB
+	DB *sqlx.DB
 }
 
 func NewDBStorage(dsn string) (*DBStorage, error) {
-	db, err := sqlx.Open("postgres", dsn)
+	DB, err := sqlx.Open("postgres", dsn)
 	if err != nil {
 		return nil, err
 	}
 
-	db.SetMaxOpenConns(10)
-	db.SetConnMaxLifetime(time.Hour)
+	DB.SetMaxOpenConns(10)
+	DB.SetConnMaxLifetime(time.Hour)
 
-	if err := db.Ping(); err != nil {
+	if err := DB.Ping(); err != nil {
 		return nil, err
 	}
 
-	return &DBStorage{db}, nil
+	return &DBStorage{DB}, nil
 }
 
 func (ds *DBStorage) Store(ctx context.Context, l model.Link) error {
-	if _, err := ds.db.ExecContext(ctx,
+	if _, err := ds.DB.ExecContext(ctx,
 		"INSERT INTO links (uuid, short_url, original_url, user_id) VALUES ($1, $2, $3, $4)",
 		l.UUID, l.ShortURL, l.OriginalURL, l.UserID,
 	); err != nil {
@@ -45,7 +45,7 @@ func (ds *DBStorage) Store(ctx context.Context, l model.Link) error {
 }
 
 func (ds *DBStorage) StoreBatch(ctx context.Context, ls []model.Link) error {
-	tx, err := ds.db.Begin()
+	tx, err := ds.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func (ds *DBStorage) StoreBatch(ctx context.Context, ls []model.Link) error {
 func (ds *DBStorage) GetByShortURL(ctx context.Context, shortURL string) (*model.Link, error) {
 	var link model.Link
 
-	err := ds.db.Get(
+	err := ds.DB.Get(
 		&link,
 		`SELECT * FROM links WHERE short_url LIKE '%' || $1`,
 		shortURL,
@@ -88,7 +88,7 @@ func (ds *DBStorage) GetByShortURL(ctx context.Context, shortURL string) (*model
 func (ds *DBStorage) GetByOriginalURL(ctx context.Context, originURL string) (*model.Link, error) {
 	var link model.Link
 
-	err := ds.db.Get(
+	err := ds.DB.Get(
 		&link,
 		`SELECT * FROM links WHERE original_url = $1`,
 		originURL,
@@ -103,7 +103,7 @@ func (ds *DBStorage) GetByOriginalURL(ctx context.Context, originURL string) (*m
 func (ds *DBStorage) GetByUserID(ctx context.Context, userID string) ([]model.Link, error) {
 	var links []model.Link
 
-	err := ds.db.Select(
+	err := ds.DB.Select(
 		&links,
 		`SELECT * FROM links WHERE user_id = $1`,
 		userID,
@@ -121,7 +121,7 @@ func (ds *DBStorage) DeleteUserLinksByID(ctx context.Context, links []string) er
 		return model.ErrUnknownUser
 	}
 
-	tx, err := ds.db.Begin()
+	tx, err := ds.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -146,15 +146,15 @@ func (ds *DBStorage) DeleteUserLinksByID(ctx context.Context, links []string) er
 }
 
 func (ds *DBStorage) Ping() error {
-	return ds.db.Ping()
+	return ds.DB.Ping()
 }
 
 func (ds *DBStorage) Close() error {
-	return ds.db.Close()
+	return ds.DB.Close()
 }
 
 func (ds *DBStorage) MigrateUp(migrationsDir, dsn string) error {
-	driver, err := postgres.WithInstance(ds.db.DB, &postgres.Config{})
+	driver, err := postgres.WithInstance(ds.DB.DB, &postgres.Config{})
 	if err != nil {
 		return fmt.Errorf("failed to create migrate driver: %w", err)
 	}

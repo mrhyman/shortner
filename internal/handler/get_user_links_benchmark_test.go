@@ -115,7 +115,7 @@ func BenchmarkGetUserLinksHandlerUserLinkCounts(b *testing.B) {
 			userID := uuid.New().String()
 
 			for i := 0; i < tc.count; i++ {
-				shortID, _ := service.GenerateShortID(i)
+				shortID, _ := service.GenerateShortID()
 				store.Store(ctx, model.Link{
 					UUID:        uuid.New(),
 					ShortURL:    baseURL + "/" + shortID,
@@ -176,7 +176,7 @@ func BenchmarkGetUserLinksHandlerMultipleUsers(b *testing.B) {
 				userIDs[u] = userID
 
 				for i := 0; i < tc.linksPerUser; i++ {
-					shortID, _ := service.GenerateShortID(u*tc.linksPerUser + i)
+					shortID, _ := service.GenerateShortID()
 					store.Store(ctx, model.Link{
 						UUID:        uuid.New(),
 						ShortURL:    baseURL + "/" + shortID,

@@ -13,7 +13,7 @@ const (
 )
 
 type Event struct {
-	Ts     time.Time `json:"ts"`
+	TS     time.Time `json:"ts"`
 	Action Action    `json:"action"`
 	UserID string    `json:"user_id"`
 	URL    string    `json:"url"`
