@@ -1,0 +1,48 @@
+go test -bench=. -benchmem -run=^$ ./internal/handler/ 2>/dev/null
+goos: darwin
+goarch: arm64
+pkg: github.com/mrhyman/shortner/internal/handler
+cpu: Apple M3 Pro
+BenchmarkExpandHandler-12                           	  453315	      2349 ns/op	    9354 B/op	      56 allocs/op
+BenchmarkExpandHandlerParallel-12                   	  674740	      1881 ns/op	    9358 B/op	      56 allocs/op
+BenchmarkExpandHandlerCacheHit-12                   	  472711	      2371 ns/op	    9363 B/op	      56 allocs/op
+BenchmarkExpandHandlerShortCodeLengths/Short_3chars-12         	  506931	      2409 ns/op	    9355 B/op	      56 allocs/op
+BenchmarkExpandHandlerShortCodeLengths/Medium_6chars-12        	  469660	      2686 ns/op	    9355 B/op	      56 allocs/op
+BenchmarkExpandHandlerShortCodeLengths/Long_10chars-12         	  382680	      2882 ns/op	    9379 B/op	      57 allocs/op
+BenchmarkExpandHandlerShortCodeLengths/VeryLong_20chars-12     	  425590	      2721 ns/op	    9443 B/op	      57 allocs/op
+BenchmarkGetUserLinksHandler-12                                	  247986	      4563 ns/op	   14013 B/op	     101 allocs/op
+BenchmarkGetUserLinksHandlerParallel-12                        	  294374	      4156 ns/op	   14024 B/op	     101 allocs/op
+BenchmarkGetUserLinksHandlerUserLinkCounts/Empty-12            	  245076	      4557 ns/op	   14014 B/op	     101 allocs/op
+BenchmarkGetUserLinksHandlerUserLinkCounts/Few_5-12            	  257223	      4423 ns/op	   14014 B/op	     101 allocs/op
+BenchmarkGetUserLinksHandlerUserLinkCounts/Medium_50-12        	  245140	      5302 ns/op	   14014 B/op	     101 allocs/op
+BenchmarkGetUserLinksHandlerUserLinkCounts/Many_200-12         	  169171	      6276 ns/op	   14014 B/op	     101 allocs/op
+BenchmarkGetUserLinksHandlerUserLinkCounts/Large_1000-12       	   70023	     15509 ns/op	   14026 B/op	     101 allocs/op
+BenchmarkGetUserLinksHandlerMultipleUsers/Users_10_Links_5-12  	  233388	      5257 ns/op	   14014 B/op	     101 allocs/op
+BenchmarkGetUserLinksHandlerMultipleUsers/Users_100_Links_10-12         	   77692	     15289 ns/op	   14026 B/op	     101 allocs/op
+BenchmarkGetUserLinksHandlerMultipleUsers/Users_1000_Links_5-12         	   22653	     52390 ns/op	   13999 B/op	     101 allocs/op
+BenchmarkGetUserLinksHandlerNoContent-12                                	  246345	      4462 ns/op	   14014 B/op	     101 allocs/op
+BenchmarkGetUserLinksHandlerWithMiddleware-12                           	  258328	      4635 ns/op	   14014 B/op	     101 allocs/op
+BenchmarkGetUserLinksHandlerWithoutMiddleware-12                        	  301497	      3692 ns/op	   13040 B/op	      60 allocs/op
+BenchmarkGetUserLinksHandlerURLLengths/Short_URLs-12                    	  240128	      4784 ns/op	   14014 B/op	     101 allocs/op
+BenchmarkGetUserLinksHandlerURLLengths/Medium_URLs-12                   	  249816	      4605 ns/op	   14014 B/op	     101 allocs/op
+BenchmarkGetUserLinksHandlerURLLengths/Long_URLs-12                     	  260820	      4781 ns/op	   14014 B/op	     101 allocs/op
+BenchmarkShortenBatchHandler-12                                         	  122846	      9263 ns/op	   17523 B/op	     138 allocs/op
+BenchmarkShortenBatchHandlerParallel-12                                 	  176500	      5770 ns/op	   17897 B/op	     138 allocs/op
+BenchmarkShortenBatchHandlerBatchSizes/Small_5-12                       	   99711	     11778 ns/op	   19769 B/op	     151 allocs/op
+BenchmarkShortenBatchHandlerBatchSizes/Medium_20-12                     	   39550	     29050 ns/op	   31284 B/op	     246 allocs/op
+BenchmarkShortenBatchHandlerBatchSizes/Large_50-12                      	   18823	     64076 ns/op	   63463 B/op	     430 allocs/op
+BenchmarkShortenBatchHandlerBatchSizes/XLarge_100-12                    	    8803	    122106 ns/op	   99706 B/op	     769 allocs/op
+BenchmarkShortenBatchHandlerEmpty-12                                    	  223224	      5173 ns/op	   15430 B/op	     112 allocs/op
+BenchmarkShortenBatchHandlerSingleVsBatch/Single_3_Requests-12          	   54589	     21702 ns/op	   48894 B/op	     372 allocs/op
+BenchmarkShortenBatchHandlerSingleVsBatch/Batch_3_URLs-12               	  118094	      9381 ns/op	   17929 B/op	     138 allocs/op
+BenchmarkShortenBatchHandlerWithMiddleware-12                           	  124376	      9227 ns/op	   17512 B/op	     138 allocs/op
+BenchmarkShortenBatchHandlerWithoutMiddleware-12                        	  174460	      6852 ns/op	   12719 B/op	      88 allocs/op
+BenchmarkShortenHandler-12                                              	  161122	      6991 ns/op	   16371 B/op	     122 allocs/op
+BenchmarkShortenHandlerParallel-12                                      	  333001	      3394 ns/op	   16324 B/op	     122 allocs/op
+BenchmarkShortenHandlerURLSizes/Short-12                                	  145485	      7002 ns/op	   16371 B/op	     122 allocs/op
+BenchmarkShortenHandlerURLSizes/Medium-12                               	  163354	      6917 ns/op	   16446 B/op	     123 allocs/op
+BenchmarkShortenHandlerURLSizes/Long-12                                 	  158833	      7191 ns/op	   16599 B/op	     123 allocs/op
+BenchmarkShortenHandlerWithMiddleware-12                                	  167401	      6807 ns/op	   16318 B/op	     122 allocs/op
+BenchmarkShortenHandlerWithoutMiddleware-12                             	  269028	      4228 ns/op	   11208 B/op	      72 allocs/op
+PASS
+ok  	github.com/mrhyman/shortner/internal/handler	52.516s

@@ -2,6 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
+
+	"net/http"
+	_ "net/http/pprof"
 
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
@@ -36,6 +40,12 @@ func main() {
 		log.Fatal(err)
 	}
 	defer cleanup()
+
+	go func() {
+		fmt.Println("pprof server started on :9090")
+		// Если ваш основной сервер уже на :8080, используйте другой порт
+		fmt.Println(http.ListenAndServe(":9090", nil))
+	}()
 
 	s.Start(ctx)
 }

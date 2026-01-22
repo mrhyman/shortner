@@ -23,8 +23,7 @@ func NewURLService(base string, repo repository.URLRepository) *URLService {
 	return &URLService{base: base, repo: repo}
 }
 
-// TODO: refactor while sprint 4
-func generateShortID(n int) (string, error) {
+func GenerateShortID(n int) (string, error) {
 	const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	b := make([]byte, n)
 	if _, err := rand.Read(b); err != nil {
@@ -70,7 +69,7 @@ func (s *URLService) Shorten(ctx context.Context, originalURL string) (string, e
 		return "", model.ErrInvalidURL
 	}
 
-	id, err := generateShortID(8)
+	id, err := GenerateShortID(8)
 	if err != nil {
 		return "", model.ErrShortLinkGeneration
 	}
@@ -98,7 +97,7 @@ func (s *URLService) ShortenBatch(ctx context.Context, batch []api.ShortenBatchR
 	links := make([]model.Link, 0, len(batch))
 
 	for _, item := range batch {
-		shortID, err := generateShortID(8)
+		shortID, err := GenerateShortID(8)
 		if err != nil {
 			return nil, model.ErrShortLinkGeneration
 		}

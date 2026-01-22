@@ -7,3 +7,6 @@ test:
 
 mc:
 	migrate create -ext sql -dir ./migrations -seq ${NAME}
+
+bench:
+	go test -bench=. -benchmem -run=^$$ ./internal/handler/ 2>/dev/null
