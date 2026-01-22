@@ -3,7 +3,6 @@ package middleware
 import (
 	"compress/gzip"
 	"context"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -51,7 +50,7 @@ type compressReader struct {
 func newCompressReader(ctx context.Context, r io.ReadCloser) (*compressReader, error) {
 	zr, err := gzip.NewReader(r)
 	if err != nil {
-		logger.FromContext(ctx).With("err", err.Error()).Error()
+		logger.Get().With("err", err.Error()).Error()
 		return nil, err
 	}
 
@@ -81,7 +80,7 @@ func (c *gzipWriter) Flush() {
 
 func WithGzip(next http.HandlerFunc) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		log := logger.FromContext(req.Context())
+		log := logger.Get()
 		ow := res
 
 		acceptEncoding := req.Header.Get("Accept-Encoding")
@@ -102,7 +101,7 @@ func WithGzip(next http.HandlerFunc) http.HandlerFunc {
 			if err != nil {
 				log.With("err", err.Error()).Error()
 				res.WriteHeader(http.StatusBadRequest)
-				fmt.Fprint(res, model.ErrCompressReading.Error())
+				res.Write([]byte(model.ErrCompressReading.Error()))
 				return
 			}
 			req.Body = cr

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"net/http"
 	_ "net/http/pprof"
@@ -21,10 +22,10 @@ import (
 
 func main() {
 	ctx := context.Background()
-	log := logger.New()
-	logger.WithinContext(ctx, log)
-
-	defer log.Sync()
+	if err := logger.Init(); err != nil {
+		log.Fatal("Failed to initialize logger:", err)
+	}
+	defer logger.Sync()
 
 	cfg := config.Load(ctx)
 
@@ -54,7 +55,7 @@ func initStorage(ctx context.Context, cfg config.AppConfig) storage.Storage {
 	var store storage.Storage
 	var err error
 
-	log := logger.FromContext(ctx)
+	log := logger.Get()
 
 	switch cfg.StorageMode {
 	case config.StorageDB:

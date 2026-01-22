@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"net/http"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/mrhyman/shortner/internal/auth"
@@ -10,66 +11,55 @@ import (
 	"github.com/mrhyman/shortner/internal/model"
 )
 
+var (
+	cookieName = "X-USER-ID"
+	cookiePool = sync.Pool{
+		New: func() interface{} {
+			return &http.Cookie{
+				Name:     cookieName,
+				Path:     "/",
+				HttpOnly: true,
+			}
+		},
+	}
+)
+
 func WithAuth(secret string) func(http.HandlerFunc) http.HandlerFunc {
+	ce, err := auth.NewCookieEncoder(secret)
+	if err != nil {
+		panic("failed to create cookie encoder: " + err.Error())
+	}
+
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(res http.ResponseWriter, req *http.Request) {
-			log := logger.FromContext(req.Context())
+			log := logger.Get()
+			var userID string
 
-			ce, err := auth.NewCookieEncoder(secret)
+			if c, err := req.Cookie(cookieName); err == nil {
+				userID, err = ce.DecodeUserID(c)
+				if err != nil {
+					log.With("err", err.Error()).Warn()
+				} else if userID != "" {
+					ctx := context.WithValue(req.Context(), model.UserIDKey, userID)
+					next.ServeHTTP(res, req.WithContext(ctx))
+					return
+				}
+			}
+
+			userID = uuid.New().String()
+			encodedValue, err := ce.EncodeUserID(userID)
 			if err != nil {
-				log.With("err", err.Error()).Warn()
+				log.With("err", err.Error()).Error(model.ErrCookieEncoding.Error())
 				http.Error(res, model.ErrWentWrong.Error(), http.StatusInternalServerError)
 				return
 			}
 
-			c, err := req.Cookie("X-USER-ID")
+			cookie := cookiePool.Get().(*http.Cookie)
+			cookie.Value = encodedValue
+			http.SetCookie(res, cookie)
 
-			if err == http.ErrNoCookie {
-				userID := uuid.New().String()
-				v, err := ce.EncodeUserID(userID)
-				if err != nil {
-					http.Error(res, model.ErrWentWrong.Error(), http.StatusInternalServerError)
-					return
-				}
-
-				http.SetCookie(res, &http.Cookie{
-					Name:     "X-USER-ID",
-					Value:    v,
-					Path:     "/",
-					HttpOnly: true,
-				})
-
-				ctx := context.WithValue(req.Context(), model.UserIDKey, userID)
-				next.ServeHTTP(res, req.WithContext(ctx))
-				return
-			}
-
-			userID, err := ce.DecodeUserID(c)
-			if err != nil {
-				userID = uuid.New().String()
-				val, err := ce.EncodeUserID(userID)
-				if err != nil {
-					http.Error(res, model.ErrWentWrong.Error(), http.StatusInternalServerError)
-					return
-				}
-
-				http.SetCookie(res, &http.Cookie{
-					Name:     "X-USER-ID",
-					Value:    val,
-					Path:     "/",
-					HttpOnly: true,
-				})
-
-				ctx := context.WithValue(req.Context(), model.UserIDKey, userID)
-				next.ServeHTTP(res, req.WithContext(ctx))
-				return
-			}
-
-			if userID == "" {
-				log.With("err", model.ErrUnknownUser.Error()).Warn()
-				res.WriteHeader(http.StatusUnauthorized)
-				return
-			}
+			cookie.Value = ""
+			cookiePool.Put(cookie)
 
 			ctx := context.WithValue(req.Context(), model.UserIDKey, userID)
 			next.ServeHTTP(res, req.WithContext(ctx))

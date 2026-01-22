@@ -11,7 +11,7 @@ import (
 )
 
 func (h *HTTPHandler) ShortenBatchHandler(res http.ResponseWriter, req *http.Request) {
-	log := logger.FromContext(req.Context())
+	log := logger.Get()
 
 	if req.Method != http.MethodPost {
 		log.With("err", model.ErrInvalidRequestParams.Error()).Warn()
@@ -28,9 +28,13 @@ func (h *HTTPHandler) ShortenBatchHandler(res http.ResponseWriter, req *http.Req
 	}
 
 	if len(sbr) == 0 {
+		buf := GetBuffer()
+		defer PutBuffer(buf)
+
 		res.Header().Set("Content-Type", "application/json")
 		res.WriteHeader(http.StatusOK)
-		json.NewEncoder(res).Encode([]struct{}{})
+		json.NewEncoder(buf).Encode([]struct{}{})
+		res.Write(buf.Bytes())
 		return
 	}
 
@@ -62,10 +66,16 @@ func (h *HTTPHandler) ShortenBatchHandler(res http.ResponseWriter, req *http.Req
 
 	res.WriteHeader(http.StatusCreated)
 
-	enc := json.NewEncoder(res)
+	buf := GetBuffer()
+	defer PutBuffer(buf)
+
+	enc := json.NewEncoder(buf)
 	if err := enc.Encode(resp); err != nil {
 		log.With("err", err.Error())
 		http.Error(res, model.ErrResponseEncoding.Error(), http.StatusBadRequest)
+		res.Write(buf.Bytes())
 		return
 	}
+
+	res.Write(buf.Bytes())
 }

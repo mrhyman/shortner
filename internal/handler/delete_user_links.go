@@ -9,7 +9,7 @@ import (
 )
 
 func (h *HTTPHandler) DeleteUserLinksHandler(res http.ResponseWriter, req *http.Request) {
-	log := logger.FromContext(req.Context())
+	log := logger.Get()
 
 	if req.Method != http.MethodDelete {
 		log.With("err", model.ErrInvalidRequestParams.Error()).Warn()
@@ -19,7 +19,8 @@ func (h *HTTPHandler) DeleteUserLinksHandler(res http.ResponseWriter, req *http.
 
 	var links []string
 
-	if err := json.NewDecoder(req.Body).Decode(&links); err != nil {
+	dec := json.NewDecoder(req.Body)
+	if err := dec.Decode(&links); err != nil {
 		log.With("err", err.Error()).Warn()
 		http.Error(res, model.ErrInvalidRequestParams.Error(), http.StatusBadRequest)
 		return

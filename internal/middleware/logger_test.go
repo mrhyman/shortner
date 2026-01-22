@@ -12,6 +12,7 @@ import (
 	"github.com/mrhyman/shortner/internal/repository"
 	"github.com/mrhyman/shortner/internal/repository/storage"
 	"github.com/mrhyman/shortner/internal/service"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 )
@@ -37,11 +38,14 @@ func TestWithLogging_Table(t *testing.T) {
 			svc := service.NewURLService(config.DefaultBaseURL, repo)
 			_ = handler.New(*svc)
 
-			core, obs := observer.New(zapcore.Level(zapcore.InfoLevel))
-			log := logger.NewWithCore(core)
-			ctx := logger.WithinContext(t.Context(), log)
+			core, obs := observer.New(zapcore.InfoLevel)
+			testLogger := zap.New(core).Sugar()
 
-			req := httptest.NewRequest(tt.method, tt.path, nil).WithContext(ctx)
+			oldLogger := logger.Get()
+			logger.Set(testLogger)
+			defer logger.Set(oldLogger)
+
+			req := httptest.NewRequest(tt.method, tt.path, nil)
 			w := httptest.NewRecorder()
 
 			// act
@@ -55,7 +59,7 @@ func TestWithLogging_Table(t *testing.T) {
 			// assert
 			resp := w.Result()
 			defer resp.Body.Close()
-			
+
 			body := w.Body.String()
 
 			if resp.StatusCode != tt.statusCode {
@@ -89,8 +93,6 @@ func TestWithLogging_Table(t *testing.T) {
 			if _, ok := ctxMap["duration"]; !ok {
 				t.Errorf("expected duration field in log")
 			}
-
-			obs.TakeAll() // clean observer
 		})
 	}
 }

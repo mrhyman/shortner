@@ -10,7 +10,7 @@ import (
 )
 
 func (h *HTTPHandler) GetUserLinksHandler(res http.ResponseWriter, req *http.Request) {
-	log := logger.FromContext(req.Context())
+	log := logger.Get()
 
 	if req.Method != http.MethodGet {
 		log.With("err", model.ErrInvalidRequestParams.Error()).Warn()

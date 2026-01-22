@@ -29,7 +29,7 @@ func (o *RemoteObserver) OnRequest(event Event) {
 
 	resp, err := o.client.Post(o.url, "application/json", bytes.NewReader(data))
 	if err != nil {
-		logger.FromContext(resp.Request.Context()).With("err", err.Error())
+		logger.Get().With("err", err.Error())
 		return
 	}
 	resp.Body.Close()

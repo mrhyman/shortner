@@ -50,7 +50,7 @@ func WithLogging(next http.HandlerFunc) http.HandlerFunc {
 
 		userID := req.Context().Value(model.UserIDKey)
 
-		logger.FromContext(req.Context()).With(
+		logger.Get().With(
 			"uri", routePattern,
 			"method", method,
 			"status", rw.status,

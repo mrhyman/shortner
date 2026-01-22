@@ -31,9 +31,9 @@ func New(cfg config.AppConfig, h handler.HTTPHandler) (*Server, func() error, er
 }
 
 func (s *Server) Start(ctx context.Context) {
-	logger.FromContext(ctx).Infof("listening on %s", s.Instance.Addr)
+	logger.Get().Infof("listening on %s", s.Instance.Addr)
 	if err := s.Instance.ListenAndServe(); err != nil {
-		logger.FromContext(ctx).With("err", err.Error()).Fatal()
+		logger.Get().With("err", err.Error()).Fatal()
 	}
 }
 

@@ -12,7 +12,7 @@ import (
 )
 
 func (h *HTTPHandler) ShortenHandler(res http.ResponseWriter, req *http.Request) {
-	log := logger.FromContext(req.Context())
+	log := logger.Get()
 
 	if req.Method != http.MethodPost {
 		log.With("err", model.ErrInvalidRequestParams.Error()).Warn()
@@ -43,11 +43,17 @@ func (h *HTTPHandler) ShortenHandler(res http.ResponseWriter, req *http.Request)
 			res.WriteHeader(http.StatusConflict)
 
 			log.With("err", existsErr.Error()).Error()
-			enc := json.NewEncoder(res)
+
+			buf := GetBuffer()
+			defer PutBuffer(buf)
+
+			enc := json.NewEncoder(buf)
 			if err := enc.Encode(resp); err != nil {
 				log.With("err", err.Error())
 				http.Error(res, model.ErrResponseEncoding.Error(), http.StatusBadRequest)
 			}
+
+			res.Write(buf.Bytes())
 			return
 
 		case errors.Is(err, model.ErrInvalidURL):
@@ -74,10 +80,15 @@ func (h *HTTPHandler) ShortenHandler(res http.ResponseWriter, req *http.Request)
 	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(http.StatusCreated)
 
-	enc := json.NewEncoder(res)
+	buf := GetBuffer()
+	defer PutBuffer(buf)
+
+	enc := json.NewEncoder(buf)
 	if err := enc.Encode(resp); err != nil {
 		log.With("err", err.Error())
 		http.Error(res, model.ErrResponseEncoding.Error(), http.StatusBadRequest)
 		return
 	}
+
+	res.Write(buf.Bytes())
 }

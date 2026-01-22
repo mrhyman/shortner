@@ -135,7 +135,7 @@ func (s *URLService) DeleteUserLinksByID(ctx context.Context, links []string) {
 	const workers = 4
 
 	ctx = context.WithoutCancel(ctx)
-	log := logger.FromContext(ctx)
+	log := logger.Get()
 
 	formatedLinks := make([]string, len(links))
 	for i, l := range links {

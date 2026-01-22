@@ -2,7 +2,6 @@ package handler
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -12,7 +11,7 @@ import (
 )
 
 func (h *HTTPHandler) ShortLinkHandler(res http.ResponseWriter, req *http.Request) {
-	log := logger.FromContext(req.Context())
+	log := logger.Get()
 
 	if req.Method != http.MethodPost {
 		log.With("err", model.ErrInvalidRequestParams.Error()).Warn()
@@ -27,14 +26,16 @@ func (h *HTTPHandler) ShortLinkHandler(res http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	body, err := io.ReadAll(req.Body)
-	if err != nil {
+	buf := GetBuffer()
+	defer PutBuffer(buf)
+
+	if _, err := io.Copy(buf, req.Body); err != nil {
 		log.With("err", err.Error()).Warn()
 		http.Error(res, model.ErrInvalidURL.Error(), http.StatusBadRequest)
 		return
 	}
 
-	originalURL := strings.TrimSpace(string(body))
+	originalURL := strings.TrimSpace(buf.String())
 
 	shortURL, err := h.svc.Shorten(req.Context(), originalURL)
 	if err != nil {
@@ -47,7 +48,7 @@ func (h *HTTPHandler) ShortLinkHandler(res http.ResponseWriter, req *http.Reques
 			res.Header().Set("Content-Type", "application/json")
 			res.WriteHeader(http.StatusConflict)
 
-			fmt.Fprint(res, existsErr.ShortURL)
+			res.Write([]byte(existsErr.ShortURL))
 			return
 
 		case errors.Is(err, model.ErrInvalidURL):
@@ -70,5 +71,5 @@ func (h *HTTPHandler) ShortLinkHandler(res http.ResponseWriter, req *http.Reques
 
 	res.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	res.WriteHeader(http.StatusCreated)
-	fmt.Fprint(res, shortURL)
+	res.Write([]byte(shortURL))
 }

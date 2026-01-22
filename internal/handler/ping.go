@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/mrhyman/shortner/internal/logger"
@@ -9,7 +8,7 @@ import (
 )
 
 func (h *HTTPHandler) PingHandler(res http.ResponseWriter, req *http.Request) {
-	log := logger.FromContext(req.Context())
+	log := logger.Get()
 
 	if req.Method != http.MethodGet {
 		log.With("err", model.ErrInvalidRequestParams.Error()).Warn()
@@ -26,5 +25,5 @@ func (h *HTTPHandler) PingHandler(res http.ResponseWriter, req *http.Request) {
 
 	res.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	res.WriteHeader(http.StatusOK)
-	fmt.Fprint(res, "pong")
+	res.Write([]byte("pong"))
 }

@@ -40,7 +40,7 @@ type AppConfig struct {
 func Load(ctx context.Context) AppConfig {
 	var cfg AppConfig
 
-	log := logger.FromContext(ctx)
+	log := logger.Get()
 
 	serverFlag := flag.String("a", DefaultServerAddress, "HTTP server address, e.g. localhost:8888")
 	baseFlag := flag.String("b", DefaultBaseURL, "Base URL for short links, e.g. http://localhost:8080")
