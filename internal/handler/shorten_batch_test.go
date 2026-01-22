@@ -124,9 +124,3 @@ func TestShortenBatchHandler(t *testing.T) {
 		})
 	}
 }
-
-func equal(a, b interface{}) bool {
-	aj, _ := json.Marshal(a)
-	bj, _ := json.Marshal(b)
-	return bytes.Equal(aj, bj)
-}
