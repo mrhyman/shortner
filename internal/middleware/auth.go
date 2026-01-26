@@ -1,3 +1,4 @@
+// Package middleware реализует промежуточное ПО для обработки HTTP запросов.
 package middleware
 
 import (
@@ -24,6 +25,9 @@ var (
 	}
 )
 
+// WithAuth это middleware для аутентификации пользователей.
+// Он проверяет наличие cookie с идентификатором пользователя и устанавливает его в контекст запроса.
+// Если cookie отсутствует, создается новый идентификатор пользователя и устанавливается cookie.
 func WithAuth(secret string) func(http.HandlerFunc) http.HandlerFunc {
 	ce, err := auth.NewCookieEncoder(secret)
 	if err != nil {

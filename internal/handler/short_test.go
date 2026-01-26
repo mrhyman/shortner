@@ -20,6 +20,36 @@ import (
 	"github.com/mrhyman/shortner/internal/service"
 )
 
+// Example_shortenEndpoint показывает пример использования эндпойнта для сокращения URL.
+//
+// Пример использования:
+//
+//	curl -X POST http://localhost:8080 \
+//	  -H "Content-Type: text/plain" \
+//	  -d "https://example.com"
+//
+// Ответ:
+//
+//	http://localhost:8080/abcd1234
+func Example_shortenEndpoint() {
+	// store := storage.NewMemoryStorage()
+	// repo := repository.NewURLRepository(store)
+	// svc := service.NewURLService("http://localhost:8080", repo)
+	// h := handler.New(*svc)
+	// handlerFunc := middleware.WithAuth("secret")(h.ShortLinkHandler)
+	//
+	// req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("https://example.com"))
+	// req.Header.Set("Content-Type", "text/plain")
+	//
+	// rec := httptest.NewRecorder()
+	// handlerFunc.ServeHTTP(rec, req)
+	//
+	// res := rec.Result()
+	// body, _ := io.ReadAll(res.Body)
+	// fmt.Printf("Status: %s\n", res.Status)
+	// fmt.Printf("Short URL: %s\n", strings.TrimSpace(string(body)))
+}
+
 func TestHandler_ShortLinkHandler(t *testing.T) {
 	type testCase struct {
 		name           string

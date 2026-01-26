@@ -1,3 +1,4 @@
+// Package handler реализует HTTP обработчики для сервиса сокращения URL.
 package handler
 
 import (
@@ -9,6 +10,9 @@ import (
 	"github.com/mrhyman/shortner/internal/model"
 )
 
+// ExpandHandler обрабатывает запросы на раскрытие сокращенного URL.
+// Принимает GET запрос с идентификатором сокращенного URL в пути.
+// Перенаправляет на оригинальный URL с помощью HTTP 307 Temporary Redirect.
 func (h *HTTPHandler) ExpandHandler(res http.ResponseWriter, req *http.Request) {
 	log := logger.Get()
 

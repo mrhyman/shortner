@@ -1,18 +1,33 @@
+// Package model содержит модели данных, используемые в приложении.
 package model
 
 import (
 	"github.com/google/uuid"
 )
 
+// Link представляет собой модель сокращенной ссылки.
 type Link struct {
-	UUID          uuid.UUID `db:"uuid"`
-	ShortURL      string    `db:"short_url"`
-	OriginalURL   string    `db:"original_url"`
-	CorrelationID string    `db:"correlation_id"`
-	UserID        string    `db:"user_id"`
-	IsDeleted     bool      `db:"is_deleted"`
+	// UUID уникальный идентификатор ссылки.
+	UUID uuid.UUID `db:"uuid"`
+
+	// ShortURL сокращенный URL.
+	ShortURL string `db:"short_url"`
+
+	// OriginalURL оригинальный URL.
+	OriginalURL string `db:"original_url"`
+
+	// CorrelationID идентификатор для корреляции запросов в пакетных операциях.
+	CorrelationID string `db:"correlation_id"`
+
+	// UserID идентификатор пользователя, которому принадлежит ссылка.
+	UserID string `db:"user_id"`
+
+	// IsDeleted флаг, указывающий, что ссылка была удалена.
+	IsDeleted bool `db:"is_deleted"`
 }
 
+// NewLink создает новый экземпляр Link с указаными параметрами.
+// Возвращает ошибку, если linkID равен нулю или если originalURL/shortURL пустые.
 func NewLink(
 	linkID uuid.UUID,
 	originalURL string,

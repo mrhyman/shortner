@@ -1,3 +1,4 @@
+// Package service реализует бизнес-логику для сервиса сокращения URL.
 package service
 
 import (
@@ -17,15 +18,18 @@ import (
 	"github.com/mrhyman/shortner/internal/repository"
 )
 
+// URLService предоставляет методы для работы с сокращенными URL.
 type URLService struct {
 	base string
 	repo repository.URLRepository
 }
 
+// NewURLService создает новый экземпляр URLService.
 func NewURLService(base string, repo repository.URLRepository) *URLService {
 	return &URLService{base: base, repo: repo}
 }
 
+// GenerateShortID генерирует случайный короткий идентификатор для URL.
 func GenerateShortID() (string, error) {
 	const length = 8
 	bytes := make([]byte, length)
@@ -35,6 +39,8 @@ func GenerateShortID() (string, error) {
 	return hex.EncodeToString(bytes)[:length], nil
 }
 
+// Expand раскрывает сокращенный URL в оригинальный URL.
+// Возвращает оригинальный URL или ошибку, если сокращенный URL не найден или недействителен.
 func (s *URLService) Expand(ctx context.Context, shortURL string) (string, error) {
 	if shortURL == "" {
 		return "", model.ErrInvalidLinkID
@@ -64,6 +70,8 @@ func (s *URLService) Expand(ctx context.Context, shortURL string) (string, error
 	return link.OriginalURL, nil
 }
 
+// Shorten сокращает оригинальный URL в короткий URL.
+// Возвращает сокращенный URL или ошибку, если возникла проблема при сокращении.
 func (s *URLService) Shorten(ctx context.Context, originalURL string) (string, error) {
 	originalURL = strings.TrimSpace(originalURL)
 	if originalURL == "" {
@@ -93,6 +101,8 @@ func (s *URLService) Shorten(ctx context.Context, originalURL string) (string, e
 	return shortURL, nil
 }
 
+// ShortenBatch сокращает множество URL в пакетном режиме.
+// Возвращает массив сокращенных URL или ошибку, если возникла проблема при сокращении.
 func (s *URLService) ShortenBatch(ctx context.Context, batch []api.ShortenBatchRequest) ([]api.ShortenBatchResponse, error) {
 	if len(batch) == 0 {
 		return []api.ShortenBatchResponse{}, nil
@@ -148,10 +158,14 @@ func (s *URLService) ShortenBatch(ctx context.Context, batch []api.ShortenBatchR
 	return response, nil
 }
 
+// GetUserLinks получает все ссылки пользователя по его идентификатору.
+// Возвращает массив ссылок пользователя или ошибку, если возникла проблема при получении.
 func (s *URLService) GetUserLinks(ctx context.Context, userID string) ([]model.Link, error) {
 	return s.repo.GetByUserID(ctx, userID)
 }
 
+// DeleteUserLinksByID асинхронно удаляет ссылки пользователя по их идентификаторам.
+// Принимает массив идентификаторов ссылок для удаления.
 func (s *URLService) DeleteUserLinksByID(ctx context.Context, links []string) {
 	jobs := make(chan []string)
 	const batchSize = 100
@@ -188,6 +202,8 @@ func (s *URLService) DeleteUserLinksByID(ctx context.Context, links []string) {
 	wg.Wait()
 }
 
+// Ping проверяет работоспособность сервиса и его зависимостей.
+// Возвращает nil, если сервис работает корректно, или ошибку в противном случае.
 func (s *URLService) Ping(ctx context.Context) error {
 	return s.repo.Ping(ctx)
 }

@@ -1,3 +1,4 @@
+// Package handler реализует HTTP обработчики для сервиса сокращения URL.
 package handler
 
 import (
@@ -7,6 +8,8 @@ import (
 	"github.com/mrhyman/shortner/internal/model"
 )
 
+// PingHandler обрабатывает запросы для проверки работоспособности сервиса.
+// Принимает GET запрос и возвращает "pong" если сервис работает корректно.
 func (h *HTTPHandler) PingHandler(res http.ResponseWriter, req *http.Request) {
 	log := logger.Get()
 

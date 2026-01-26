@@ -1,3 +1,4 @@
+// Package middleware реализует промежуточное ПО для обработки HTTP запросов.
 package middleware
 
 import (
@@ -9,12 +10,14 @@ import (
 	"github.com/mrhyman/shortner/internal/model"
 )
 
+// logWriter оборачивает http.ResponseWriter для сбора информации о HTTP ответе.
 type logWriter struct {
 	http.ResponseWriter
 	status int
 	size   int
 }
 
+// WriteHeader записывает код состояния HTTP в ответ и сохраняет его для логирования.
 func (lw *logWriter) WriteHeader(statusCode int) {
 	if lw.status != 0 {
 		return
@@ -23,6 +26,7 @@ func (lw *logWriter) WriteHeader(statusCode int) {
 	lw.ResponseWriter.WriteHeader(statusCode)
 }
 
+// Write записывает данные в ответ и сохраняет размер для логирования.
 func (lw *logWriter) Write(b []byte) (int, error) {
 	if lw.status == 0 {
 		lw.status = http.StatusOK
@@ -32,6 +36,8 @@ func (lw *logWriter) Write(b []byte) (int, error) {
 	return n, err
 }
 
+// WithLogging это middleware для логирования HTTP запросов и ответов.
+// Он записывает информацию о каждом запросе, включая метод, URI, статус ответа, размер и время выполнения.
 func WithLogging(next http.HandlerFunc) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		start := time.Now()

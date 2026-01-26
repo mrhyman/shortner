@@ -1,3 +1,4 @@
+// Package handler реализует HTTP обработчики для сервиса сокращения URL.
 package handler
 
 import (
@@ -10,6 +11,9 @@ import (
 	"github.com/mrhyman/shortner/internal/model"
 )
 
+// ShortenBatchHandler обрабатывает пакетные запросы на сокращение множества URL.
+// Принимает POST запрос с массивом объектов для сокращения.
+// Возвращает массив сокращенных URL в формате JSON.
 func (h *HTTPHandler) ShortenBatchHandler(res http.ResponseWriter, req *http.Request) {
 	log := logger.Get()
 

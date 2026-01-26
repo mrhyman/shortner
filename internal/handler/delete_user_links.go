@@ -1,3 +1,4 @@
+// Package handler реализует HTTP обработчики для сервиса сокращения URL.
 package handler
 
 import (
@@ -8,6 +9,9 @@ import (
 	"github.com/mrhyman/shortner/internal/model"
 )
 
+// DeleteUserLinksHandler обрабатывает запросы на удаление ссылок пользователя.
+// Принимает DELETE запрос с массивом идентификаторов ссылок для удаления.
+// Асинхронно удаляет указанные ссылки и возвращает HTTP 202 Accepted.
 func (h *HTTPHandler) DeleteUserLinksHandler(res http.ResponseWriter, req *http.Request) {
 	log := logger.Get()
 

@@ -1,3 +1,4 @@
+// Package handler реализует HTTP обработчики для сервиса сокращения URL.
 package handler
 
 import (
@@ -9,6 +10,8 @@ import (
 	"github.com/mrhyman/shortner/internal/model"
 )
 
+// GetUserLinksHandler обрабатывает запросы на получение всех ссылок пользователя.
+// Принимает GET запрос и возвращает список всех сокращенных ссылок пользователя в формате JSON.
 func (h *HTTPHandler) GetUserLinksHandler(res http.ResponseWriter, req *http.Request) {
 	log := logger.Get()
 
