@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
+
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -17,6 +19,28 @@ import (
 	"github.com/mrhyman/shortner/internal/repository/storage"
 	"github.com/mrhyman/shortner/internal/service"
 )
+
+func ExampleHTTPHandler_DeleteUserLinksHandler() {
+	store := storage.NewMemoryStorage()
+	repo := repository.NewURLRepository(store)
+	svc := service.NewURLService(config.DefaultBaseURL, repo)
+	h := handler.New(*svc)
+
+	links := []string{"abc123", "def456"}
+	body, _ := json.Marshal(links)
+
+	ctx := context.WithValue(context.Background(), model.UserIDKey, "user123")
+	req := httptest.NewRequest(http.MethodDelete, "/api/user/urls", bytes.NewReader(body))
+	req = req.WithContext(ctx)
+
+	res := httptest.NewRecorder()
+	h.DeleteUserLinksHandler(res, req)
+
+	fmt.Println(res.Code)
+
+	// Output:
+	// 202
+}
 
 func TestHandler_DeleteUserLinksHandler(t *testing.T) {
 	type testCase struct {

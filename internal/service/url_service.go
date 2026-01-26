@@ -20,13 +20,18 @@ import (
 
 // URLService предоставляет методы для работы с сокращенными URL.
 type URLService struct {
-	base string
-	repo repository.URLRepository
+	base        string
+	repo        repository.URLRepository
+	IDGenerator func() (string, error) // Добавляем поле
 }
 
 // NewURLService создает новый экземпляр URLService.
 func NewURLService(base string, repo repository.URLRepository) *URLService {
-	return &URLService{base: base, repo: repo}
+	return &URLService{
+		base:        base,
+		repo:        repo,
+		IDGenerator: GenerateShortID,
+	}
 }
 
 // GenerateShortID генерирует случайный короткий идентификатор для URL.
@@ -83,7 +88,7 @@ func (s *URLService) Shorten(ctx context.Context, originalURL string) (string, e
 		return "", model.ErrInvalidURL
 	}
 
-	shortID, err := GenerateShortID()
+	shortID, err := s.IDGenerator()
 	if err != nil {
 		return "", model.ErrShortLinkGeneration
 	}
@@ -130,7 +135,7 @@ func (s *URLService) ShortenBatch(ctx context.Context, batch []api.ShortenBatchR
 		}
 
 		// Генерируем короткий ID
-		shortID, err := GenerateShortID()
+		shortID, err := s.IDGenerator()
 		if err != nil {
 			return nil, model.ErrShortLinkGeneration
 		}

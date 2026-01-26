@@ -3,6 +3,7 @@ package handler_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -17,6 +18,56 @@ import (
 	"github.com/mrhyman/shortner/internal/repository/storage"
 	"github.com/mrhyman/shortner/internal/service"
 )
+
+func Example_getUserLinksHandler() {
+	ce, _ := auth.NewCookieEncoder("secret")
+	userID := "user123"
+	userHash, _ := ce.EncodeUserID(userID)
+
+	ctx := context.WithValue(context.Background(), model.UserIDKey, userHash)
+
+	store := storage.NewMemoryStorage()
+	repo := repository.NewURLRepository(store)
+	svc := service.NewURLService("http://localhost:8080", repo)
+	h := handler.New(*svc)
+
+	// Setup test data
+	store.Store(ctx, model.Link{
+		UUID:        uuid.New(),
+		ShortURL:    "http://localhost:8080/a1",
+		OriginalURL: "https://example.com/1",
+		UserID:      userHash,
+	})
+	store.Store(ctx, model.Link{
+		UUID:        uuid.New(),
+		ShortURL:    "http://localhost:8080/a2",
+		OriginalURL: "https://example.com/2",
+		UserID:      userHash,
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/api/user/urls", nil)
+	req = req.WithContext(ctx)
+	rec := httptest.NewRecorder()
+
+	h.GetUserLinksHandler(rec, req)
+
+	res := rec.Result()
+	defer res.Body.Close()
+
+	fmt.Printf("%d\n", res.StatusCode)
+
+	var links []api.UserLinksResponse
+	if err := json.NewDecoder(res.Body).Decode(&links); err == nil {
+		for _, link := range links {
+			fmt.Printf("%s %s\n", link.ShortURL, link.OriginalURL)
+		}
+	}
+
+	// Output:
+	// 200
+	// http://localhost:8080/a1 https://example.com/1
+	// http://localhost:8080/a2 https://example.com/2
+}
 
 func TestHandler_GetUserLinksHandler(t *testing.T) {
 	type testCase struct {

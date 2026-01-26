@@ -1,6 +1,7 @@
 package handler_test
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -13,6 +14,28 @@ import (
 	"github.com/mrhyman/shortner/internal/repository/storage"
 	"github.com/mrhyman/shortner/internal/service"
 )
+
+func Example_pingHandler() {
+	store := storage.NewMemoryStorage()
+	repo := repository.NewURLRepository(store)
+	svc := service.NewURLService("http://localhost:8080", repo)
+	h := handler.New(*svc)
+
+	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
+	rec := httptest.NewRecorder()
+
+	h.PingHandler(rec, req)
+
+	res := rec.Result()
+	defer res.Body.Close()
+
+	fmt.Printf("%d\n", res.StatusCode)
+	fmt.Printf("%s\n", rec.Body.String())
+
+	// Output:
+	// 200
+	// pong
+}
 
 func TestPingHandler(t *testing.T) {
 

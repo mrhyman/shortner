@@ -3,6 +3,7 @@ package handler_test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -17,6 +18,43 @@ import (
 	"github.com/mrhyman/shortner/internal/repository/storage"
 	"github.com/mrhyman/shortner/internal/service"
 )
+
+func Example_shortenHandler() {
+	store := storage.NewMemoryStorage()
+	repo := repository.NewURLRepository(store)
+	svc := service.NewURLService(config.DefaultBaseURL, repo)
+
+	// Мокаем генератор
+	svc.IDGenerator = func() (string, error) {
+		return "test1234", nil
+	}
+
+	h := handler.New(*svc)
+	handlerFunc := middleware.WithAuth("secret")(h.ShortenHandler)
+
+	requestBody := api.ShortenRequest{URL: "https://example.com"}
+	bodyBytes, _ := json.Marshal(requestBody)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/shorten", bytes.NewReader(bodyBytes))
+	req.Header.Set("Content-Type", "application/json")
+
+	rec := httptest.NewRecorder()
+
+	handlerFunc.ServeHTTP(rec, req)
+
+	res := rec.Result()
+	defer res.Body.Close()
+
+	fmt.Printf("%d\n", res.StatusCode)
+
+	var response api.ShortenResponse
+	_ = json.NewDecoder(res.Body).Decode(&response)
+	fmt.Printf("%s\n", response.Result)
+
+	// Output:
+	// 201
+	// http://localhost:8080/test1234
+}
 
 func TestShortenHandler(t *testing.T) {
 	type testCase struct {
