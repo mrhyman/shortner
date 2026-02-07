@@ -2,15 +2,6 @@
 
 package model
 
-func (x *AlreadyExistsError) Reset() {
-	if x == nil {
-		return
-	}
-
-	x.ShortURL = ""
-	x.Err = nil
-}
-
 func (x *Link) Reset() {
 	if x == nil {
 		return

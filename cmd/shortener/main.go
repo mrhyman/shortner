@@ -20,7 +20,15 @@ import (
 	"github.com/mrhyman/shortner/internal/service"
 )
 
+var (
+	buildVersion string
+	buildDate    string
+	buildCommit  string
+)
+
 func main() {
+	printBuildInfo()
+
 	ctx := context.Background()
 	if err := logger.Init(); err != nil {
 		log.Fatal("Failed to initialize logger:", err)
@@ -84,4 +92,20 @@ func initStorage(ctx context.Context, cfg config.AppConfig) storage.Storage {
 	}
 
 	return store
+}
+
+func printBuildInfo() {
+	if buildVersion == "" {
+		buildVersion = "N/A"
+	}
+	if buildDate == "" {
+		buildDate = "N/A"
+	}
+	if buildCommit == "" {
+		buildCommit = "N/A"
+	}
+
+	fmt.Printf("Build version: %s\n", buildVersion)
+	fmt.Printf("Build date: %s\n", buildDate)
+	fmt.Printf("Build commit: %s\n", buildCommit)
 }

@@ -7,6 +7,7 @@ import (
 	"go/format"
 	"go/parser"
 	"go/token"
+	"go/types"
 	"os"
 	"path/filepath"
 )
@@ -23,17 +24,38 @@ func Generate(root string) error {
 		}
 
 		fset := token.NewFileSet()
-		pkgs, err := parser.ParseDir(fset, path, nil, parser.ParseComments)
+
+		var files []*ast.File
+		entries, err := os.ReadDir(path)
 		if err != nil {
 			return nil
 		}
 
-		for _, pkg := range pkgs {
-			structs := findResetStructs(pkg)
-			if len(structs) > 0 {
-				if err := generateFile(path, pkg.Name, structs); err != nil {
-					return err
-				}
+		var pkgName string
+		for _, entry := range entries {
+			if entry.IsDir() || filepath.Ext(entry.Name()) != ".go" {
+				continue
+			}
+
+			file, err := parser.ParseFile(fset, filepath.Join(path, entry.Name()), nil, parser.ParseComments)
+			if err != nil {
+				continue
+			}
+
+			if pkgName == "" {
+				pkgName = file.Name.Name
+			}
+			files = append(files, file)
+		}
+
+		if len(files) == 0 {
+			return nil
+		}
+
+		structs := findResetStructs(fset, pkgName, files)
+		if len(structs) > 0 {
+			if err := generateFile(path, pkgName, structs); err != nil {
+				return err
 			}
 		}
 
@@ -41,10 +63,18 @@ func Generate(root string) error {
 	})
 }
 
-func findResetStructs(pkg *ast.Package) []StructInfo {
+func findResetStructs(fset *token.FileSet, pkgName string, files []*ast.File) []StructInfo {
 	var result []StructInfo
 
-	for _, file := range pkg.Files {
+	conf := types.Config{Importer: nil}
+	info := &types.Info{
+		Types: make(map[ast.Expr]types.TypeAndValue),
+		Defs:  make(map[*ast.Ident]types.Object),
+	}
+
+	_, _ = conf.Check(pkgName, fset, files, info)
+
+	for _, file := range files {
 		for _, decl := range file.Decls {
 			gen, ok := decl.(*ast.GenDecl)
 			if !ok || gen.Tok != token.TYPE {
@@ -104,7 +134,7 @@ func generateFieldReset(buf *bytes.Buffer, name string, expr ast.Expr) {
 	case *ast.Ident:
 		fmt.Fprintf(buf, "\tx.%s = %s\n", name, zeroValue(t.Name))
 
-	case *ast.ArrayType: // slice
+	case *ast.ArrayType:
 		fmt.Fprintf(buf, "\tx.%s = x.%s[:0]\n", name, name)
 
 	case *ast.MapType:
@@ -116,7 +146,6 @@ func generateFieldReset(buf *bytes.Buffer, name string, expr ast.Expr) {
 		buf.WriteString("\t}\n")
 
 	default:
-		// вложенная структура с Reset()
 		buf.WriteString(fmt.Sprintf(
 			"\tif r, ok := any(x.%s).(interface{ Reset() }); ok {\n\t\tr.Reset()\n\t}\n",
 			name,
