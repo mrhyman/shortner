@@ -48,8 +48,8 @@ func (h *HTTPHandler) ShortenHandler(res http.ResponseWriter, req *http.Request)
 
 			log.With("err", existsErr.Error()).Error()
 
-			buf := GetBuffer()
-			defer PutBuffer(buf)
+			buf := bufferPool.Get()
+			defer buf.Reset()
 
 			enc := json.NewEncoder(buf)
 			if err := enc.Encode(resp); err != nil {
@@ -84,8 +84,8 @@ func (h *HTTPHandler) ShortenHandler(res http.ResponseWriter, req *http.Request)
 	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(http.StatusCreated)
 
-	buf := GetBuffer()
-	defer PutBuffer(buf)
+	buf := bufferPool.Get()
+	defer buf.Reset()
 
 	enc := json.NewEncoder(buf)
 	if err := enc.Encode(resp); err != nil {

@@ -3,39 +3,24 @@ package handler
 import (
 	"bufio"
 	"bytes"
-	"io"
-	"sync"
+
+	"github.com/mrhyman/shortner/internal/pool"
 )
 
-var (
-	bufferPool = sync.Pool{
-		New: func() any {
-			return new(bytes.Buffer)
-		},
+var bufferPool = pool.New(func() *bytes.Buffer {
+	return new(bytes.Buffer)
+})
+
+type resettableReader struct {
+	*bufio.Reader
+}
+
+func (r *resettableReader) Reset() {
+	r.Reader.Reset(nil)
+}
+
+var readerPool = pool.New(func() *resettableReader {
+	return &resettableReader{
+		Reader: bufio.NewReader(nil),
 	}
-	readerPool = sync.Pool{
-		New: func() any {
-			return bufio.NewReader(nil)
-		},
-	}
-)
-
-func GetBuffer() *bytes.Buffer {
-	return bufferPool.Get().(*bytes.Buffer)
-}
-
-func PutBuffer(buf *bytes.Buffer) {
-	buf.Reset()
-	bufferPool.Put(buf)
-}
-
-func GetReader(r io.Reader) *bufio.Reader {
-	reader := readerPool.Get().(*bufio.Reader)
-	reader.Reset(r)
-	return reader
-}
-
-func PutReader(r *bufio.Reader) {
-	r.Reset(nil)
-	readerPool.Put(r)
-}
+})

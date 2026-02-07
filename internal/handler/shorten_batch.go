@@ -32,8 +32,8 @@ func (h *HTTPHandler) ShortenBatchHandler(res http.ResponseWriter, req *http.Req
 	}
 
 	if len(sbr) == 0 {
-		buf := GetBuffer()
-		defer PutBuffer(buf)
+		buf := bufferPool.Get()
+		defer buf.Reset()
 
 		res.Header().Set("Content-Type", "application/json")
 		res.WriteHeader(http.StatusOK)
@@ -70,8 +70,8 @@ func (h *HTTPHandler) ShortenBatchHandler(res http.ResponseWriter, req *http.Req
 
 	res.WriteHeader(http.StatusCreated)
 
-	buf := GetBuffer()
-	defer PutBuffer(buf)
+	buf := bufferPool.Get()
+	defer buf.Reset()
 
 	enc := json.NewEncoder(buf)
 	if err := enc.Encode(resp); err != nil {
