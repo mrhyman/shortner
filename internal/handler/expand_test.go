@@ -2,6 +2,7 @@ package handler_test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,6 +15,36 @@ import (
 	"github.com/mrhyman/shortner/internal/repository/storage"
 	"github.com/mrhyman/shortner/internal/service"
 )
+
+func Example_expandHandler() {
+	store := storage.NewMemoryStorage()
+	repo := repository.NewURLRepository(store)
+	svc := service.NewURLService("http://localhost:8080", repo)
+	h := handler.New(*svc)
+
+	// Setup test data
+	ctx := context.Background()
+	store.Store(ctx, model.Link{
+		UUID:        uuid.New(),
+		ShortURL:    "http://localhost:8080/abc123",
+		OriginalURL: "https://example.com",
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/abc123", nil)
+	rec := httptest.NewRecorder()
+
+	h.ExpandHandler(rec, req)
+
+	res := rec.Result()
+	defer res.Body.Close()
+
+	fmt.Printf("%d\n", res.StatusCode)
+	fmt.Printf("%s\n", res.Header.Get("Location"))
+
+	// Output:
+	// 307
+	// https://example.com
+}
 
 func TestHandler_ExpandHandler(t *testing.T) {
 	type testCase struct {

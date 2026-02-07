@@ -2,6 +2,11 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"log"
+
+	"net/http"
+	_ "net/http/pprof"
 
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
@@ -17,10 +22,10 @@ import (
 
 func main() {
 	ctx := context.Background()
-	log := logger.New()
-	logger.WithinContext(ctx, log)
-
-	defer log.Sync()
+	if err := logger.Init(); err != nil {
+		log.Fatal("Failed to initialize logger:", err)
+	}
+	defer logger.Sync()
 
 	cfg := config.Load(ctx)
 
@@ -30,7 +35,18 @@ func main() {
 	repo := repository.NewURLRepository(store)
 	svc := service.NewURLService(cfg.BaseURL, repo)
 	h := handler.New(*svc)
-	s := server.New(cfg, *h)
+
+	s, cleanup, err := server.New(cfg, *h)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer cleanup()
+
+	go func() {
+		fmt.Println("pprof server started on :9090")
+		// Если ваш основной сервер уже на :8080, используйте другой порт
+		fmt.Println(http.ListenAndServe(":9090", nil))
+	}()
 
 	s.Start(ctx)
 }
@@ -39,7 +55,7 @@ func initStorage(ctx context.Context, cfg config.AppConfig) storage.Storage {
 	var store storage.Storage
 	var err error
 
-	log := logger.FromContext(ctx)
+	log := logger.Get()
 
 	switch cfg.StorageMode {
 	case config.StorageDB:

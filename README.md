@@ -42,3 +42,33 @@ git fetch template && git checkout template/v2 .github
 - **Clean Architecture**
 - **Hexagonal Architecture**
 - **Layered Architecture**
+
+## Оптимизация производительности
+
+### 1. Глобальный Logger
+
+**Проблема:** 
+- Logger создавался при каждом HTTP запросе
+- `logger.FromContext()` вызывал `zap.NewProduction()` каждый раз
+
+**Решение:**
+- Создан глобальный logger, инициализируемый один раз
+- Заменен `logger.FromContext(ctx)` на `logger.Get()` во всех handlers и middleware
+
+### 2. CookieEncoder вынесен из замыкания
+
+**Проблема:**
+- `auth.NewCookieEncoder()` создавался при каждом запросе в middleware
+
+**Решение:**
+- encoder создается один раз при инициализации
+
+### 3. sync.Pool для http.Cookie и JSON encoding
+
+**Проблема:**
+- `http.Cookie` аллоцировался каждый раз
+- Промежуточные буферы создавались при каждом JSON encoding
+
+**Решение:**
+- Добавлен `sync.Pool` для переиспользования cookie объектов
+- Используются `GetBuffer()/PutBuffer()` для переиспользования буферов

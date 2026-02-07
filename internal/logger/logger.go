@@ -2,36 +2,62 @@ package logger
 
 import (
 	"context"
+	"sync"
 
-	"log/slog"
-
-	"github.com/mrhyman/shortner/internal/model"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 type ctxKey struct{}
 
-func WithinContext(ctx context.Context, logger *zap.SugaredLogger) context.Context {
-	return context.WithValue(ctx, ctxKey{}, logger)
+var (
+	globalLogger     *zap.SugaredLogger
+	globalLoggerOnce sync.Once
+	loggerMutex      sync.RWMutex
+)
+
+func Init() error {
+	var err error
+	globalLoggerOnce.Do(func() {
+		var log *zap.Logger
+		log, err = zap.NewProduction()
+		if err != nil {
+			return
+		}
+		loggerMutex.Lock()
+		globalLogger = log.Sugar()
+		loggerMutex.Unlock()
+	})
+	return err
 }
 
-func FromContext(ctx context.Context) *zap.SugaredLogger {
-	if l, ok := ctx.Value(ctxKey{}).(*zap.SugaredLogger); ok && l != nil {
-		return l
+func Get() *zap.SugaredLogger {
+	loggerMutex.RLock()
+	defer loggerMutex.RUnlock()
+
+	if globalLogger == nil {
+		loggerMutex.RUnlock()
+		_ = Init()
+		loggerMutex.RLock()
 	}
-	return New()
+	return globalLogger
 }
 
-func New() *zap.SugaredLogger {
-	logger, err := zap.NewDevelopment()
-	if err != nil {
-		slog.ErrorContext(context.Background(), model.ErrLoggerSetup.Error(), slog.String("err", err.Error()))
+func Set(log *zap.SugaredLogger) {
+	loggerMutex.Lock()
+	defer loggerMutex.Unlock()
+	globalLogger = log
+}
+
+func WithContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxKey{}, Get())
+}
+
+func Sync() error {
+	loggerMutex.RLock()
+	defer loggerMutex.RUnlock()
+
+	if globalLogger != nil {
+		return globalLogger.Sync()
 	}
-
-	return logger.Sugar()
-}
-
-func NewWithCore(core zapcore.Core) *zap.SugaredLogger {
-	return zap.New(core).Sugar()
+	return nil
 }

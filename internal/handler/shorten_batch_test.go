@@ -3,6 +3,7 @@ package handler_test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -16,6 +17,52 @@ import (
 	"github.com/mrhyman/shortner/internal/service"
 	"github.com/stretchr/testify/assert"
 )
+
+func Example_shortenBatchHandler() {
+	store := storage.NewMemoryStorage()
+	repo := repository.NewURLRepository(store)
+	svc := service.NewURLService("http://localhost:8080", repo)
+
+	// Мок с счётчиком
+	counter := 0
+	svc.IDGenerator = func() (string, error) {
+		counter++
+		return fmt.Sprintf("test%04d", counter), nil
+	}
+
+	h := handler.New(*svc)
+	handlerFunc := middleware.WithAuth("secret")(h.ShortenBatchHandler)
+
+	requestBody := []api.ShortenBatchRequest{
+		{CorrelationID: "1", OriginalURL: "http://example.com/1"},
+		{CorrelationID: "2", OriginalURL: "http://example.com/2"},
+	}
+	bodyBytes, _ := json.Marshal(requestBody)
+
+	req := httptest.NewRequest(http.MethodPost, "/shorten/batch", bytes.NewReader(bodyBytes))
+	req.Header.Set("Content-Type", "application/json")
+
+	rec := httptest.NewRecorder()
+
+	handlerFunc.ServeHTTP(rec, req)
+
+	res := rec.Result()
+	defer res.Body.Close()
+
+	fmt.Printf("%d\n", res.StatusCode)
+
+	var response []api.ShortenBatchResponse
+	if err := json.NewDecoder(res.Body).Decode(&response); err == nil {
+		for _, resp := range response {
+			fmt.Printf("%s %s\n", resp.CorrelationID, resp.ShortURL)
+		}
+	}
+
+	// Output:
+	// 201
+	// 1 http://localhost:8080/test0001
+	// 2 http://localhost:8080/test0002
+}
 
 func TestShortenBatchHandler(t *testing.T) {
 	type testCase struct {
@@ -123,10 +170,4 @@ func TestShortenBatchHandler(t *testing.T) {
 			}
 		})
 	}
-}
-
-func equal(a, b interface{}) bool {
-	aj, _ := json.Marshal(a)
-	bj, _ := json.Marshal(b)
-	return bytes.Equal(aj, bj)
 }

@@ -32,19 +32,23 @@ type AppConfig struct {
 	StoragePath   string `env:"FILE_STORAGE_PATH"`
 	DBDSN         string `env:"DATABASE_DSN"`
 	HashKey       string `env:"HASH_KEY"`
+	AuditFile     string `env:"AUDIT_FILE"`
+	AuditURL      string `env:"AUDIT_URL"`
 	StorageMode   StorageMode
 }
 
 func Load(ctx context.Context) AppConfig {
 	var cfg AppConfig
 
-	log := logger.FromContext(ctx)
+	log := logger.Get()
 
 	serverFlag := flag.String("a", DefaultServerAddress, "HTTP server address, e.g. localhost:8888")
 	baseFlag := flag.String("b", DefaultBaseURL, "Base URL for short links, e.g. http://localhost:8080")
 	fileFlag := flag.String("f", DefaultFileStoragePath, "Base storage path, e.g. /.storage/db.json")
 	dbFlag := flag.String("d", DefaultDBDSN, "Database connection string. postgres://postgres:postgres@localhost:5432/postgres")
 	hashKey := flag.String("hk", DefaultHashKey, "Auth hash key. e.g. qwerty12345")
+	auditFileFlag := flag.String("audit-file", "", "Audit file path. e.g. /var/log/audit.log")
+	auditURLFlag := flag.String("audit-url", "", "External audit URL. e.g. http://somehost:8080/audit")
 	flag.Parse()
 
 	if err := env.Parse(&cfg); err != nil {
@@ -74,6 +78,14 @@ func Load(ctx context.Context) AppConfig {
 
 	if cfg.HashKey == "" {
 		cfg.HashKey = *hashKey
+	}
+
+	if cfg.AuditFile == "" {
+		cfg.AuditFile = *auditFileFlag
+	}
+
+	if cfg.AuditURL == "" {
+		cfg.AuditURL = *auditURLFlag
 	}
 
 	return setStorageMode(&cfg)
