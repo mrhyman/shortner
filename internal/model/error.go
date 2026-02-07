@@ -28,6 +28,7 @@ var (
 	ErrCookieEncoding        = errors.New("can't encode cookie")
 )
 
+// generate:reset
 type AlreadyExistsError struct {
 	ShortURL string
 	Err      error

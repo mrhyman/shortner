@@ -2,6 +2,7 @@
 package api
 
 // ShortenRequest представляет тело запроса для сокращения одного URL.
+// generate:reset
 type ShortenRequest struct {
 	// URL это оригинальный URL, который нужно сократить.
 	URL string `json:"url"`

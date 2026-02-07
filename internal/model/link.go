@@ -6,6 +6,7 @@ import (
 )
 
 // Link представляет собой модель сокращенной ссылки.
+// generate:reset
 type Link struct {
 	// UUID уникальный идентификатор ссылки.
 	UUID uuid.UUID `db:"uuid"`
