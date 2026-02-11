@@ -26,8 +26,8 @@ func (h *HTTPHandler) ShortLinkHandler(res http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	buf := GetBuffer()
-	defer PutBuffer(buf)
+	buf := bufferPool.Get()
+	defer buf.Reset()
 
 	if _, err := io.Copy(buf, req.Body); err != nil {
 		log.With("err", err.Error()).Warn()
