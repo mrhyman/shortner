@@ -34,6 +34,9 @@ type AppConfig struct {
 	HashKey       string `env:"HASH_KEY"`
 	AuditFile     string `env:"AUDIT_FILE"`
 	AuditURL      string `env:"AUDIT_URL"`
+	EnableHTTPS   bool   `env:"ENABLE_HTTPS"`
+	CertFile      string
+	KeyFile       string
 	StorageMode   StorageMode
 }
 
@@ -49,6 +52,9 @@ func Load(ctx context.Context) AppConfig {
 	hashKey := flag.String("hk", DefaultHashKey, "Auth hash key. e.g. qwerty12345")
 	auditFileFlag := flag.String("audit-file", "", "Audit file path. e.g. /var/log/audit.log")
 	auditURLFlag := flag.String("audit-url", "", "External audit URL. e.g. http://somehost:8080/audit")
+	enableHTTPSFlag := flag.Bool("s", false, "Enable HTTPS server")
+	certFileFlag := flag.String("cert-file", "certs/server.crt", "Path to certificate file")
+	keyFileFlag := flag.String("key-file", "certs/server.key", "Path to private key file")
 	flag.Parse()
 
 	if err := env.Parse(&cfg); err != nil {
@@ -86,6 +92,15 @@ func Load(ctx context.Context) AppConfig {
 
 	if cfg.AuditURL == "" {
 		cfg.AuditURL = *auditURLFlag
+	}
+
+	if !cfg.EnableHTTPS {
+		cfg.EnableHTTPS = *enableHTTPSFlag
+	}
+
+	if cfg.EnableHTTPS {
+		cfg.CertFile = *certFileFlag
+		cfg.KeyFile = *keyFileFlag
 	}
 
 	return setStorageMode(&cfg)

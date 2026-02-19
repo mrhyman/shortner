@@ -26,3 +26,4 @@ vendor/
 
 # Local file storage
 .storage/
+certs/

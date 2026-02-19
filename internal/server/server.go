@@ -2,7 +2,17 @@ package server
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
+	"math/big"
+	"net"
 	"net/http"
+	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mrhyman/shortner/internal/config"
@@ -14,6 +24,7 @@ import (
 
 type Server struct {
 	Instance *http.Server
+	Config   config.AppConfig
 }
 
 func New(cfg config.AppConfig, h handler.HTTPHandler) (*Server, func() error, error) {
@@ -22,19 +33,111 @@ func New(cfg config.AppConfig, h handler.HTTPHandler) (*Server, func() error, er
 		return nil, nil, err
 	}
 
+	if cfg.EnableHTTPS {
+		if err := ensureCertificates(cfg.CertFile, cfg.KeyFile); err != nil {
+			return nil, nil, err
+		}
+	}
+
 	return &Server{
 		Instance: &http.Server{
 			Addr:    cfg.ServerAddress,
 			Handler: SetupMux(&h, cfg, pub),
 		},
+		Config: cfg,
 	}, cleanup, nil
 }
 
 func (s *Server) Start(ctx context.Context) {
-	logger.Get().Infof("listening on %s", s.Instance.Addr)
-	if err := s.Instance.ListenAndServe(); err != nil {
-		logger.Get().With("err", err.Error()).Fatal()
+	if s.Config.EnableHTTPS {
+		logger.Get().Infof("listening on %s with HTTPS", s.Instance.Addr)
+		if err := s.Instance.ListenAndServeTLS(s.Config.CertFile, s.Config.KeyFile); err != nil {
+			logger.Get().With("err", err.Error()).Fatal()
+		}
+	} else {
+		logger.Get().Infof("listening on %s", s.Instance.Addr)
+		if err := s.Instance.ListenAndServe(); err != nil {
+			logger.Get().With("err", err.Error()).Fatal()
+		}
 	}
+}
+
+func ensureCertificates(certFile, keyFile string) error {
+	if _, err := os.Stat(certFile); err == nil {
+		if _, err := os.Stat(keyFile); err == nil {
+			return nil
+		}
+	}
+
+	certDir := filepath.Dir(certFile)
+	if err := os.MkdirAll(certDir, 0755); err != nil {
+		return err
+	}
+
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return err
+	}
+
+	template := x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject: pkix.Name{
+			Organization: []string{"Shortner App"},
+		},
+		NotBefore: time.Now(),
+		NotAfter:  time.Now().Add(365 * 24 * time.Hour), // 1 year
+
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+	}
+
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return err
+	}
+
+	for _, addr := range addrs {
+		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				template.IPAddresses = append(template.IPAddresses, ipnet.IP)
+			}
+		}
+	}
+
+	template.IPAddresses = append(template.IPAddresses, net.ParseIP("127.0.0.1"), net.ParseIP("::1"))
+
+	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
+	if err != nil {
+		return err
+	}
+
+	certOut, err := os.Create(certFile)
+	if err != nil {
+		return err
+	}
+	defer certOut.Close()
+
+	if err := pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes}); err != nil {
+		return err
+	}
+
+	keyOut, err := os.Create(keyFile)
+	if err != nil {
+		return err
+	}
+	defer keyOut.Close()
+
+	privateKeyBytes, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	if err != nil {
+		return err
+	}
+
+	if err := pem.Encode(keyOut, &pem.Block{Type: "PRIVATE KEY", Bytes: privateKeyBytes}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func SetupMux(h *handler.HTTPHandler, cfg config.AppConfig, pub *observer.Publisher) http.Handler {
