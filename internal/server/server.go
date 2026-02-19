@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
 	"math/big"
 	"net"
 	"net/http"
@@ -48,18 +49,34 @@ func New(cfg config.AppConfig, h handler.HTTPHandler) (*Server, func() error, er
 	}, cleanup, nil
 }
 
-func (s *Server) Start(ctx context.Context) {
-	if s.Config.EnableHTTPS {
-		logger.Get().Infof("listening on %s with HTTPS", s.Instance.Addr)
-		if err := s.Instance.ListenAndServeTLS(s.Config.CertFile, s.Config.KeyFile); err != nil {
-			logger.Get().With("err", err.Error()).Fatal()
+func (s *Server) Start(ctx context.Context) error {
+	errChan := make(chan error, 1)
+
+	go func() {
+		if s.Config.EnableHTTPS {
+			logger.Get().Infof("listening on %s with HTTPS", s.Instance.Addr)
+			if err := s.Instance.ListenAndServeTLS(s.Config.CertFile, s.Config.KeyFile); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				errChan <- err
+			}
+		} else {
+			logger.Get().Infof("listening on %s", s.Instance.Addr)
+			if err := s.Instance.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				errChan <- err
+			}
 		}
-	} else {
-		logger.Get().Infof("listening on %s", s.Instance.Addr)
-		if err := s.Instance.ListenAndServe(); err != nil {
-			logger.Get().With("err", err.Error()).Fatal()
-		}
+	}()
+
+	select {
+	case err := <-errChan:
+		return err
+	case <-ctx.Done():
+		return ctx.Err()
 	}
+}
+
+func (s *Server) Shutdown(ctx context.Context) error {
+	logger.Get().Info("Shutting down server...")
+	return s.Instance.Shutdown(ctx)
 }
 
 func ensureCertificates(certFile, keyFile string) error {

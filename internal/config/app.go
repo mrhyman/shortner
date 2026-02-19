@@ -6,6 +6,7 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/mrhyman/shortner/internal/logger"
@@ -17,6 +18,7 @@ const (
 	DefaultFileStoragePath = ""
 	DefaultDBDSN           = ""
 	DefaultHashKey         = "qwerty12345"
+	ShutdownTimeout        = 10 * time.Second
 )
 
 type StorageMode int

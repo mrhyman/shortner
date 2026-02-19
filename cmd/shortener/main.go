@@ -4,12 +4,16 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"net/http"
 	_ "net/http/pprof"
 
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/mrhyman/shortner/internal/config"
 	"github.com/mrhyman/shortner/internal/handler"
@@ -50,13 +54,46 @@ func main() {
 	}
 	defer cleanup()
 
-	go func() {
-		fmt.Println("pprof server started on :9090")
-		// Если ваш основной сервер уже на :8080, используйте другой порт
-		fmt.Println(http.ListenAndServe(":9090", nil))
-	}()
+	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
+	defer stop()
 
-	s.Start(ctx)
+	g, ctx := errgroup.WithContext(ctx)
+
+	g.Go(func() error {
+		pprofServer := &http.Server{Addr: ":9090"}
+		fmt.Println("pprof server started on :9090")
+
+		go func() {
+			<-ctx.Done()
+			pprofServer.Shutdown(context.Background())
+		}()
+
+		if err := pprofServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			return err
+		}
+		return nil
+	})
+
+	g.Go(func() error {
+		return s.Start(ctx)
+	})
+
+	logger.Get().Info("Application started")
+
+	if err := g.Wait(); err != nil {
+		logger.Get().With("err", err.Error()).Error("Server error")
+	}
+
+	logger.Get().Info("Shutting down gracefully...")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), config.ShutdownTimeout)
+	defer cancel()
+
+	if err := s.Shutdown(shutdownCtx); err != nil {
+		logger.Get().With("err", err.Error()).Error("Shutdown error")
+	}
+
+	logger.Get().Info("Application stopped")
 }
 
 func initStorage(ctx context.Context, cfg config.AppConfig) storage.Storage {
@@ -68,7 +105,7 @@ func initStorage(ctx context.Context, cfg config.AppConfig) storage.Storage {
 	switch cfg.StorageMode {
 	case config.StorageDB:
 		store, err = storage.NewDBStorage(cfg.DBDSN)
-		store, ok := store.(*storage.DBStorage)
+		dbStore, ok := store.(*storage.DBStorage)
 		if !ok {
 			log.Fatal("failed to cast storage to *DBStorage")
 		}
@@ -76,7 +113,7 @@ func initStorage(ctx context.Context, cfg config.AppConfig) storage.Storage {
 			log.With("err", err.Error()).Fatal()
 		}
 
-		err = store.MigrateUp("migrations", cfg.DBDSN)
+		err = dbStore.MigrateUp("migrations", cfg.DBDSN)
 		if err != nil {
 			log.With("err", err.Error()).Fatal()
 		}
