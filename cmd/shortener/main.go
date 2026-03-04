@@ -41,7 +41,7 @@ func main() {
 
 	cfg := config.Load(ctx)
 
-	store := initStorage(ctx, cfg)
+	store := initStorage(cfg)
 	defer store.Close()
 
 	repo := repository.NewURLRepository(store)
@@ -65,7 +65,11 @@ func main() {
 
 		go func() {
 			<-ctx.Done()
-			pprofServer.Shutdown(context.Background())
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), config.ShutdownTimeout)
+			defer cancel()
+			if err := pprofServer.Shutdown(shutdownCtx); err != nil {
+				logger.Get().With("err", err.Error()).Error("pprof server shutdown error")
+			}
 		}()
 
 		if err := pprofServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -96,7 +100,7 @@ func main() {
 	logger.Get().Info("Application stopped")
 }
 
-func initStorage(ctx context.Context, cfg config.AppConfig) storage.Storage {
+func initStorage(cfg config.AppConfig) storage.Storage {
 	var store storage.Storage
 	var err error
 

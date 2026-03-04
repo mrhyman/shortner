@@ -8,6 +8,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"math/big"
 	"net"
 	"net/http"
@@ -88,12 +89,12 @@ func ensureCertificates(certFile, keyFile string) error {
 
 	certDir := filepath.Dir(certFile)
 	if err := os.MkdirAll(certDir, 0755); err != nil {
-		return err
+		return fmt.Errorf("failed to create certificate directory: %w", err)
 	}
 
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to generate RSA private key: %w", err)
 	}
 
 	template := x509.Certificate{
@@ -111,7 +112,7 @@ func ensureCertificates(certFile, keyFile string) error {
 
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get network interface addresses: %w", err)
 	}
 
 	for _, addr := range addrs {
@@ -126,32 +127,32 @@ func ensureCertificates(certFile, keyFile string) error {
 
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create certificate: %w", err)
 	}
 
 	certOut, err := os.Create(certFile)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create certificate file: %w", err)
 	}
 	defer certOut.Close()
 
 	if err := pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes}); err != nil {
-		return err
+		return fmt.Errorf("failed to encode certificate to PEM: %w", err)
 	}
 
 	keyOut, err := os.Create(keyFile)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create key file: %w", err)
 	}
 	defer keyOut.Close()
 
 	privateKeyBytes, err := x509.MarshalPKCS8PrivateKey(privateKey)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal private key: %w", err)
 	}
 
 	if err := pem.Encode(keyOut, &pem.Block{Type: "PRIVATE KEY", Bytes: privateKeyBytes}); err != nil {
-		return err
+		return fmt.Errorf("failed to encode private key to PEM: %w", err)
 	}
 
 	return nil

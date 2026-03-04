@@ -1,19 +1,11 @@
 package config_test
 
 import (
-	"flag"
 	"os"
 	"testing"
 
 	"github.com/mrhyman/shortner/internal/config"
 )
-
-func resetEnvAndFlags() {
-	os.Unsetenv("SERVER_ADDRESS")
-	os.Unsetenv("BASE_URL")
-	os.Unsetenv("CONFIG")
-	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
-}
 
 func TestSetup_ConfigPriorities(t *testing.T) {
 	tests := []struct {
@@ -60,9 +52,9 @@ func TestSetup_ConfigPriorities(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// arrange
-			resetEnvAndFlags()
+			config.ResetForTest()
 			for k, v := range tt.envVars {
-				os.Setenv(k, v)
+				t.Setenv(k, v)
 			}
 
 			// act
@@ -162,13 +154,13 @@ func TestSetup_JSONConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// arrange
-			resetEnvAndFlags()
+			config.ResetForTest()
 			for k, v := range tt.envVars {
-				os.Setenv(k, v)
+				t.Setenv(k, v)
 			}
 
 			if tt.configFile != "" {
-				os.Setenv("CONFIG", tt.configFile)
+				t.Setenv("CONFIG", tt.configFile)
 			}
 
 			// act
