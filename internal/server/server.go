@@ -173,6 +173,9 @@ func SetupMux(h *handler.HTTPHandler, cfg config.AppConfig, pub *observer.Publis
 	// service endpoints
 	r.Get("/ping", middleware.WithLogging(h.PingHandler))
 
+	// internal endpoints with trusted subnet check
+	r.Get("/api/internal/stats", InternalMiddleware(cfg)(h.StatsHandler))
+
 	return r
 }
 
@@ -183,5 +186,14 @@ func DefaultMiddleware(cfg config.AppConfig, pub *observer.Publisher) func(http.
 				middleware.WithLogging(h),
 			),
 		))
+	}
+}
+
+// InternalMiddleware применяет middleware для внутренних эндпоинтов
+func InternalMiddleware(cfg config.AppConfig) func(http.HandlerFunc) http.HandlerFunc {
+	return func(h http.HandlerFunc) http.HandlerFunc {
+		return middleware.WithTrustedSubnet(cfg.TrustedSubnet)(
+			middleware.WithLogging(h),
+		)
 	}
 }

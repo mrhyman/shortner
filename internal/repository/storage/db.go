@@ -145,6 +145,36 @@ func (ds *DBStorage) DeleteUserLinksByID(ctx context.Context, links []string) er
 	return tx.Commit()
 }
 
+func (ds *DBStorage) CountURLs(ctx context.Context) (int, error) {
+	var count int
+
+	err := ds.DB.GetContext(
+		ctx,
+		&count,
+		`SELECT COUNT(*) FROM links WHERE is_deleted = false`,
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (ds *DBStorage) CountUsers(ctx context.Context) (int, error) {
+	var count int
+
+	err := ds.DB.GetContext(
+		ctx,
+		&count,
+		`SELECT COUNT(DISTINCT user_id) FROM links WHERE is_deleted = false`,
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
 func (ds *DBStorage) Ping() error {
 	return ds.DB.Ping()
 }

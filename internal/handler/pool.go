@@ -18,9 +18,3 @@ type resettableReader struct {
 func (r *resettableReader) Reset() {
 	r.Reader.Reset(nil)
 }
-
-var readerPool = pool.New(func() *resettableReader {
-	return &resettableReader{
-		Reader: bufio.NewReader(nil),
-	}
-})

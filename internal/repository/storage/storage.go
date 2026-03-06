@@ -14,8 +14,9 @@ type Storage interface {
 	Store(ctx context.Context, link model.Link) error
 	StoreBatch(ctx context.Context, links []model.Link) error
 	DeleteUserLinksByID(ctx context.Context, links []string) error
+	CountURLs(ctx context.Context) (int, error)
+	CountUsers(ctx context.Context) (int, error)
 }
-
 type HealthChecker interface {
 	Ping() error
 	Close() error

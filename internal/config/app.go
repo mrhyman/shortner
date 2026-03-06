@@ -17,6 +17,7 @@ const (
 	DefaultBaseURL         = "http://localhost:8080"
 	DefaultFileStoragePath = ""
 	DefaultDBDSN           = ""
+	DefaultTrustedSubnet   = "127.0.0.0/8"
 	DefaultHashKey         = "qwerty12345"
 	ShutdownTimeout        = 10 * time.Second
 )
@@ -41,6 +42,7 @@ type AppConfig struct {
 	CertFile      string
 	KeyFile       string
 	StorageMode   StorageMode
+	TrustedSubnet string
 }
 
 var (
@@ -62,12 +64,14 @@ func createFlagSet() *pflag.FlagSet {
 	fs.StringP("base-url", "b", DefaultBaseURL, "Base URL for short links, e.g. http://localhost:8080")
 	fs.StringP("file-storage-path", "f", DefaultFileStoragePath, "Base storage path, e.g. /.storage/db.json")
 	fs.StringP("database-dsn", "d", DefaultDBDSN, "Database connection string. postgres://postgres:postgres@localhost:5432/postgres")
+	fs.StringP("trusted-subnet", "t", DefaultTrustedSubnet, "Trusted subnet (CIDR)")
 	fs.String("hash-key", DefaultHashKey, "Auth hash key. e.g. qwerty12345")
 	fs.String("audit-file", "", "Audit file path. e.g. /var/log/audit.log")
 	fs.String("audit-url", "", "External audit URL. e.g. http://somehost:8080/audit")
 	fs.BoolP("enable-https", "s", false, "Enable HTTPS server")
 	fs.String("cert-file", "certs/server.crt", "Path to certificate file")
 	fs.String("key-file", "certs/server.key", "Path to private key file")
+
 	return fs
 }
 
@@ -120,6 +124,7 @@ func Load(ctx context.Context) AppConfig {
 	v.SetDefault("enable-https", false)
 	v.SetDefault("cert-file", "certs/server.crt")
 	v.SetDefault("key-file", "certs/server.key")
+	v.SetDefault("trusted-subnet", DefaultTrustedSubnet)
 
 	// конфигурационный файл (приоритет выше дефолтов)
 	configPath := ""
@@ -151,6 +156,9 @@ func Load(ctx context.Context) AppConfig {
 			}
 			if v.IsSet("enable_https") {
 				v.Set("enable-https", v.GetBool("enable_https"))
+			}
+			if v.IsSet("trusted-subnet") {
+				v.Set("trusted-subnet", v.GetString("trusted_subnet"))
 			}
 		}
 	}
@@ -206,6 +214,7 @@ func Load(ctx context.Context) AppConfig {
 		EnableHTTPS:   v.GetBool("enable-https"),
 		CertFile:      v.GetString("cert-file"),
 		KeyFile:       v.GetString("key-file"),
+		TrustedSubnet: v.GetString("trusted-subnet"),
 	}
 
 	if cfg.StoragePath != "" && !filepath.IsAbs(cfg.StoragePath) {

@@ -118,6 +118,35 @@ func (fs *FileStorage) DeleteUserLinksByID(ctx context.Context, links []string) 
 	return fs.save()
 }
 
+func (fs *FileStorage) CountURLs(ctx context.Context) (int, error) {
+	fs.mu.RLock()
+	defer fs.mu.RUnlock()
+
+	count := 0
+	for _, link := range fs.links {
+		if !link.IsDeleted {
+			count++
+		}
+	}
+
+	return count, nil
+}
+
+func (fs *FileStorage) CountUsers(ctx context.Context) (int, error) {
+	fs.mu.RLock()
+	defer fs.mu.RUnlock()
+
+	users := make(map[string]struct{})
+	for _, link := range fs.links {
+		if link.IsDeleted {
+			continue
+		}
+		users[link.UserID] = struct{}{}
+	}
+
+	return len(users), nil
+}
+
 func (fs *FileStorage) Ping() error {
 	_, err := os.Stat(fs.path)
 	return err
