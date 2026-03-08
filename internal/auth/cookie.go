@@ -38,3 +38,17 @@ func (ce *CookieEncoder) DecodeUserID(c *http.Cookie) (string, error) {
 
 	return string(plain), nil
 }
+
+func (ce *CookieEncoder) DecodeValue(value string) (string, error) {
+	data, err := hex.DecodeString(value)
+	if err != nil {
+		return "", err
+	}
+
+	plain, err := ce.crypto.Decrypt(data)
+	if err != nil {
+		return "", err
+	}
+
+	return string(plain), nil
+}

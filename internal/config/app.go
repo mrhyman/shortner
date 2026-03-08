@@ -14,6 +14,7 @@ import (
 
 const (
 	DefaultServerAddress   = "localhost:8080"
+	DefaultGRPCAddress     = "localhost:50051"
 	DefaultBaseURL         = "http://localhost:8080"
 	DefaultFileStoragePath = ""
 	DefaultDBDSN           = ""
@@ -43,6 +44,7 @@ type AppConfig struct {
 	KeyFile       string
 	StorageMode   StorageMode
 	TrustedSubnet string
+	GRPCAddress   string
 }
 
 var (
@@ -61,6 +63,7 @@ func createFlagSet() *pflag.FlagSet {
 	fs := pflag.NewFlagSet(os.Args[0], pflag.ExitOnError)
 	fs.StringP("config", "c", "", "Path to config file")
 	fs.StringP("server-address", "a", DefaultServerAddress, "HTTP server address, e.g. localhost:8888")
+	fs.StringP("grpc-address", "g", DefaultGRPCAddress, "GRPC server address, e.g. localhost:50051")
 	fs.StringP("base-url", "b", DefaultBaseURL, "Base URL for short links, e.g. http://localhost:8080")
 	fs.StringP("file-storage-path", "f", DefaultFileStoragePath, "Base storage path, e.g. /.storage/db.json")
 	fs.StringP("database-dsn", "d", DefaultDBDSN, "Database connection string. postgres://postgres:postgres@localhost:5432/postgres")
@@ -87,6 +90,8 @@ func getFlagDefault(flagName string) string {
 		return DefaultDBDSN
 	case "hash-key":
 		return DefaultHashKey
+	case "grpc-address":
+		return DefaultGRPCAddress
 	case "enable-https":
 		return "false"
 	case "cert-file":
@@ -117,6 +122,7 @@ func Load(ctx context.Context) AppConfig {
 
 	// дефолтные значения (самый низкий приоритет)
 	v.SetDefault("server-address", DefaultServerAddress)
+	v.SetDefault("grpc-address", DefaultGRPCAddress)
 	v.SetDefault("base-url", DefaultBaseURL)
 	v.SetDefault("file-storage-path", DefaultFileStoragePath)
 	v.SetDefault("database-dsn", DefaultDBDSN)
@@ -144,6 +150,9 @@ func Load(ctx context.Context) AppConfig {
 
 			if v.IsSet("server_address") {
 				v.Set("server-address", v.GetString("server_address"))
+			}
+			if v.IsSet("grpc_address") {
+				v.Set("grpc-address", v.GetString("grpc_address"))
 			}
 			if v.IsSet("base_url") {
 				v.Set("base-url", v.GetString("base_url"))
@@ -184,6 +193,7 @@ func Load(ctx context.Context) AppConfig {
 	// переменные окружения (наивысший приоритет)
 	envMappings := map[string]string{
 		"SERVER_ADDRESS":    "server-address",
+		"GRPC_ADDRESS":      "grpc-address",
 		"BASE_URL":          "base-url",
 		"FILE_STORAGE_PATH": "file-storage-path",
 		"DATABASE_DSN":      "database-dsn",
@@ -205,6 +215,7 @@ func Load(ctx context.Context) AppConfig {
 
 	cfg := AppConfig{
 		ServerAddress: v.GetString("server-address"),
+		GRPCAddress:   v.GetString("grpc-address"),
 		BaseURL:       v.GetString("base-url"),
 		StoragePath:   v.GetString("file-storage-path"),
 		DBDSN:         v.GetString("database-dsn"),

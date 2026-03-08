@@ -18,9 +18,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mrhyman/shortner/internal/config"
-	"github.com/mrhyman/shortner/internal/handler"
+	handler "github.com/mrhyman/shortner/internal/handler/http"
 	"github.com/mrhyman/shortner/internal/logger"
-	"github.com/mrhyman/shortner/internal/middleware"
+	"github.com/mrhyman/shortner/internal/middleware/http"
 	"github.com/mrhyman/shortner/internal/observer"
 )
 

@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/mrhyman/shortner/internal/config"
-	"github.com/mrhyman/shortner/internal/handler"
+	"github.com/mrhyman/shortner/internal/handler/http"
 	"github.com/mrhyman/shortner/internal/model"
 	"github.com/mrhyman/shortner/internal/repository"
 	"github.com/mrhyman/shortner/internal/repository/storage"

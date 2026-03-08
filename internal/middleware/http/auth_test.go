@@ -7,7 +7,7 @@ import (
 
 	"github.com/mrhyman/shortner/internal/auth"
 	"github.com/mrhyman/shortner/internal/config"
-	"github.com/mrhyman/shortner/internal/middleware"
+	"github.com/mrhyman/shortner/internal/middleware/http"
 	"github.com/mrhyman/shortner/internal/model"
 )
 
