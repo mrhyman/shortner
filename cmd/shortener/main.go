@@ -48,14 +48,12 @@ func main() {
 	svc := service.NewURLService(cfg.BaseURL, repo)
 	h := handler.New(*svc)
 
-	// HTTP server
-	httpServer, cleanup, err := server.New(cfg, *h)
+	httpServer, cleanup, err := server.NewHTTP(cfg, *h)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer cleanup()
 
-	// gRPC server
 	grpcServer, err := server.NewGRPC(cfg, svc)
 	if err != nil {
 		log.Fatal(err)

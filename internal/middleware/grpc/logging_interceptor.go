@@ -16,14 +16,13 @@ func NewLoggingInterceptor() *LoggingInterceptor {
 	return &LoggingInterceptor{}
 }
 
-// Unary возвращает unary server interceptor для логирования
 func (l *LoggingInterceptor) Unary() grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
-		req interface{},
+		req any,
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
-	) (interface{}, error) {
+	) (any, error) {
 		start := time.Now()
 		log := logger.Get()
 
@@ -47,10 +46,9 @@ func (l *LoggingInterceptor) Unary() grpc.UnaryServerInterceptor {
 	}
 }
 
-// Stream возвращает stream server interceptor для логирования
 func (l *LoggingInterceptor) Stream() grpc.StreamServerInterceptor {
 	return func(
-		srv interface{},
+		srv any,
 		ss grpc.ServerStream,
 		info *grpc.StreamServerInfo,
 		handler grpc.StreamHandler,

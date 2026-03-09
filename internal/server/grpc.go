@@ -35,19 +35,14 @@ func NewGRPC(cfg config.AppConfig, svc *service.URLService) (*GRPCServer, error)
 		return nil, fmt.Errorf("failed to create gRPC listener: %w", err)
 	}
 
-	// Создаем auth service из конфига
 	authService := auth.NewAuthService(cfg.HashKey)
-
-	// Настройка interceptors
 	interceptors := setupGRPCInterceptors(authService)
 
-	// Опции сервера
 	opts := []grpc.ServerOption{
 		grpc.ChainUnaryInterceptor(interceptors.unary...),
 		grpc.ChainStreamInterceptor(interceptors.stream...),
 	}
 
-	// Добавляем TLS если включен
 	if cfg.EnableHTTPS {
 		if err := ensureCertificates(cfg.CertFile, cfg.KeyFile); err != nil {
 			return nil, fmt.Errorf("failed to ensure certificates: %w", err)
@@ -62,7 +57,6 @@ func NewGRPC(cfg config.AppConfig, svc *service.URLService) (*GRPCServer, error)
 
 	grpcServer := grpc.NewServer(opts...)
 
-	// Регистрируем handler
 	shortenerHandler := grpcHandler.NewShortenerHandler(svc)
 	pb.RegisterShortenerServiceServer(grpcServer, shortenerHandler)
 
@@ -122,21 +116,15 @@ type grpcInterceptors struct {
 func setupGRPCInterceptors(authService grpcMiddleware.AuthService) *grpcInterceptors {
 	log := logger.Get()
 
-	// Recovery interceptor
 	recoveryOpts := []grpcrecovery.Option{
-		grpcrecovery.WithRecoveryHandler(func(p interface{}) error {
+		grpcrecovery.WithRecoveryHandler(func(p any) error {
 			log.With("panic", p).Error("gRPC panic recovered")
 			return status.Errorf(codes.Internal, "internal server error")
 		}),
 	}
-
-	// Logging interceptor
 	loggingInterceptor := grpcMiddleware.NewLoggingInterceptor()
-
-	// Auth interceptor
 	authInterceptor := grpcMiddleware.NewAuthInterceptor(authService)
 
-	// Собираем цепочку interceptors
 	unaryInterceptors := []grpc.UnaryServerInterceptor{
 		grpcrecovery.UnaryServerInterceptor(recoveryOpts...),
 		loggingInterceptor.Unary(),
@@ -147,7 +135,6 @@ func setupGRPCInterceptors(authService grpcMiddleware.AuthService) *grpcIntercep
 		loggingInterceptor.Stream(),
 	}
 
-	// Добавляем auth для всех методов кроме внутренних
 	unaryInterceptors = append(unaryInterceptors, authInterceptor.Unary())
 	streamInterceptors = append(streamInterceptors, authInterceptor.Stream())
 

@@ -26,14 +26,13 @@ func NewAuthInterceptor(authService AuthService) *AuthInterceptor {
 	}
 }
 
-// Unary возвращает unary server interceptor для авторизации
 func (a *AuthInterceptor) Unary() grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
-		req interface{},
+		req any,
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
-	) (interface{}, error) {
+	) (any, error) {
 		newCtx, err := a.authorize(ctx)
 		if err != nil {
 			return nil, err
@@ -42,10 +41,9 @@ func (a *AuthInterceptor) Unary() grpc.UnaryServerInterceptor {
 	}
 }
 
-// Stream возвращает stream server interceptor для авторизации
 func (a *AuthInterceptor) Stream() grpc.StreamServerInterceptor {
 	return func(
-		srv interface{},
+		srv any,
 		ss grpc.ServerStream,
 		info *grpc.StreamServerInfo,
 		handler grpc.StreamHandler,
@@ -64,7 +62,6 @@ func (a *AuthInterceptor) Stream() grpc.StreamServerInterceptor {
 	}
 }
 
-// authorize выполняет авторизацию и возвращает контекст с userID
 func (a *AuthInterceptor) authorize(ctx context.Context) (context.Context, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
@@ -75,7 +72,6 @@ func (a *AuthInterceptor) authorize(ctx context.Context) (context.Context, error
 	// Проверяем authorization header
 	authHeaders := md.Get("authorization")
 	if len(authHeaders) == 0 {
-		// Генерируем новый токен
 		return a.generateNewToken(ctx)
 	}
 
@@ -89,14 +85,12 @@ func (a *AuthInterceptor) authorize(ctx context.Context) (context.Context, error
 	return context.WithValue(ctx, model.UserIDKey, userID), nil
 }
 
-// generateNewToken генерирует новый токен и добавляет его в контекст
 func (a *AuthInterceptor) generateNewToken(ctx context.Context) (context.Context, error) {
 	token, err := a.authService.GenerateToken()
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to generate token")
 	}
 
-	// Извлекаем userID из токена
 	userID, err := a.authService.ValidateToken(token)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to validate token")
@@ -104,7 +98,6 @@ func (a *AuthInterceptor) generateNewToken(ctx context.Context) (context.Context
 
 	ctx = context.WithValue(ctx, model.UserIDKey, userID)
 
-	// Отправляем токен обратно клиенту
 	header := metadata.Pairs("authorization", "Bearer "+token)
 	if err := grpc.SendHeader(ctx, header); err != nil {
 		return nil, status.Error(codes.Internal, "failed to send header")
@@ -113,7 +106,6 @@ func (a *AuthInterceptor) generateNewToken(ctx context.Context) (context.Context
 	return ctx, nil
 }
 
-// wrappedStream оборачивает grpc.ServerStream для подмены контекста
 type wrappedStream struct {
 	grpc.ServerStream
 	ctx context.Context

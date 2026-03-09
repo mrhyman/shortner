@@ -27,14 +27,12 @@ func WithTrustedSubnet(trustedSubnetCIDR string) func(http.HandlerFunc) http.Han
 
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			// Если доверенная подсеть не задана, запрещаем доступ
 			if trustedSubnet == nil {
 				log.Warn("Access denied: trusted subnet not configured")
 				http.Error(w, "Forbidden", http.StatusForbidden)
 				return
 			}
 
-			// Получаем IP из заголовка X-Real-IP
 			realIP := r.Header.Get("X-Real-IP")
 			if realIP == "" {
 				log.Warn("Access denied: X-Real-IP header not provided")
@@ -42,7 +40,6 @@ func WithTrustedSubnet(trustedSubnetCIDR string) func(http.HandlerFunc) http.Han
 				return
 			}
 
-			// Парсим IP-адрес
 			ip := net.ParseIP(realIP)
 			if ip == nil {
 				log.With("ip", realIP).Warn("Access denied: invalid IP address")
@@ -50,7 +47,6 @@ func WithTrustedSubnet(trustedSubnetCIDR string) func(http.HandlerFunc) http.Han
 				return
 			}
 
-			// Проверяем принадлежность к подсети
 			if !trustedSubnet.Contains(ip) {
 				log.With("ip", realIP, "subnet", trustedSubnet.String()).Warn("Access denied: IP not in trusted subnet")
 				http.Error(w, "Forbidden", http.StatusForbidden)

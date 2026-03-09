@@ -22,7 +22,6 @@ func (h *HTTPHandler) StatsHandler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Получение статистики
 	urlsCount, usersCount, err := h.svc.GetStats(req.Context())
 	if err != nil {
 		log.With("err", err.Error()).Error()
@@ -30,7 +29,6 @@ func (h *HTTPHandler) StatsHandler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Формирование ответа
 	response := api.StatsResponse{
 		URLs:  urlsCount,
 		Users: usersCount,

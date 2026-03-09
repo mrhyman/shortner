@@ -29,7 +29,7 @@ type Server struct {
 	Config   config.AppConfig
 }
 
-func New(cfg config.AppConfig, h handler.HTTPHandler) (*Server, func() error, error) {
+func NewHTTP(cfg config.AppConfig, h handler.HTTPHandler) (*Server, func() error, error) {
 	pub, cleanup, err := observer.SetupObservers(cfg)
 	if err != nil {
 		return nil, nil, err
