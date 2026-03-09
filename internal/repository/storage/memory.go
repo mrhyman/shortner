@@ -86,6 +86,35 @@ func (ms *MemoryStorage) DeleteUserLinksByID(ctx context.Context, links []string
 	return nil
 }
 
+func (ms *MemoryStorage) CountURLs(ctx context.Context) (int, error) {
+	ms.mu.RLock()
+	defer ms.mu.RUnlock()
+
+	count := 0
+	for _, link := range ms.link {
+		if !link.IsDeleted {
+			count++
+		}
+	}
+
+	return count, nil
+}
+
+func (ms *MemoryStorage) CountUsers(ctx context.Context) (int, error) {
+	ms.mu.RLock()
+	defer ms.mu.RUnlock()
+
+	users := make(map[string]struct{})
+	for _, link := range ms.link {
+		if link.IsDeleted {
+			continue
+		}
+		users[link.UserID] = struct{}{}
+	}
+
+	return len(users), nil
+}
+
 func (ms *MemoryStorage) Ping() error {
 	return nil
 }

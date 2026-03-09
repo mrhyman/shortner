@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/mrhyman/shortner/internal/config"
-	"github.com/mrhyman/shortner/internal/handler"
+	"github.com/mrhyman/shortner/internal/handler/http"
 	"github.com/mrhyman/shortner/internal/logger"
-	"github.com/mrhyman/shortner/internal/middleware"
+	"github.com/mrhyman/shortner/internal/middleware/http"
 	"github.com/mrhyman/shortner/internal/repository"
 	"github.com/mrhyman/shortner/internal/repository/storage"
 	"github.com/mrhyman/shortner/internal/service"

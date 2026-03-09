@@ -3,7 +3,6 @@ package middleware
 
 import (
 	"compress/gzip"
-	"context"
 	"io"
 	"net/http"
 	"strings"
@@ -57,7 +56,7 @@ type compressReader struct {
 }
 
 // newCompressReader создает новый экземпляр compressReader для декомпрессии GZIP данных.
-func newCompressReader(ctx context.Context, r io.ReadCloser) (*compressReader, error) {
+func newCompressReader(r io.ReadCloser) (*compressReader, error) {
 	zr, err := gzip.NewReader(r)
 	if err != nil {
 		logger.Get().With("err", err.Error()).Error()
@@ -113,7 +112,7 @@ func WithGzip(next http.HandlerFunc) http.HandlerFunc {
 		contentEncoding := req.Header.Get("Content-Encoding")
 		sendsGzip := strings.Contains(contentEncoding, "gzip")
 		if sendsGzip {
-			cr, err := newCompressReader(req.Context(), req.Body)
+			cr, err := newCompressReader(req.Body)
 			if err != nil {
 				log.With("err", err.Error()).Error()
 				res.WriteHeader(http.StatusBadRequest)

@@ -22,7 +22,7 @@ import (
 type URLService struct {
 	base        string
 	repo        repository.URLRepository
-	IDGenerator func() (string, error) // Добавляем поле
+	IDGenerator func() (string, error)
 }
 
 // NewURLService создает новый экземпляр URLService.
@@ -211,4 +211,19 @@ func (s *URLService) DeleteUserLinksByID(ctx context.Context, links []string) {
 // Возвращает nil, если сервис работает корректно, или ошибку в противном случае.
 func (s *URLService) Ping(ctx context.Context) error {
 	return s.repo.Ping(ctx)
+}
+
+// GetStats возвращает статистику сервиса: количество URL и пользователей.
+func (s *URLService) GetStats(ctx context.Context) (int, int, error) {
+	urlsCount, err := s.repo.CountURLs(ctx)
+	if err != nil {
+		return 0, 0, model.ErrStorageUnavailable
+	}
+
+	usersCount, err := s.repo.CountUsers(ctx)
+	if err != nil {
+		return 0, 0, model.ErrStorageUnavailable
+	}
+
+	return urlsCount, usersCount, nil
 }

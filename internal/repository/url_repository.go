@@ -28,6 +28,12 @@ type URLRepository interface {
 
 	// Ping проверяет работоспособность хранилища данных.
 	Ping(ctx context.Context) error
+
+	// CountURLs возвращает общее количество сокращённых URL в хранилище.
+	CountURLs(ctx context.Context) (int, error)
+
+	// CountUsers возвращает общее количество уникальных пользователей в хранилище.
+	CountUsers(ctx context.Context) (int, error)
 }
 
 // URLRepo реализует интерфейс URLRepository, используя различные типы хранилищ.
@@ -53,6 +59,16 @@ func (r *URLRepo) GetByUserID(ctx context.Context, userID string) ([]model.Link,
 // DeleteUserLinksByID удаляет ссылки пользователя по их идентификаторам.
 func (r *URLRepo) DeleteUserLinksByID(ctx context.Context, links []string) error {
 	return r.storage.DeleteUserLinksByID(ctx, links)
+}
+
+// CountURLs возвращает общее количество сокращённых URL в хранилище.
+func (r *URLRepo) CountURLs(ctx context.Context) (int, error) {
+	return r.storage.CountURLs(ctx)
+}
+
+// CountUsers возвращает общее количество уникальных пользователей в хранилище.
+func (r *URLRepo) CountUsers(ctx context.Context) (int, error) {
+	return r.storage.CountUsers(ctx)
 }
 
 // Store сохраняет новую сокращенную ссылку в хранилище.

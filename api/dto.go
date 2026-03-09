@@ -37,3 +37,9 @@ type UserLinksResponse struct {
 	// OriginalURL это оригинальный URL, который был сокращен.
 	OriginalURL string `json:"original_url"`
 }
+
+// StatsResponse представляет ответ эндпоинта статистики.
+type StatsResponse struct {
+	URLs  int `json:"urls"`
+	Users int `json:"users"`
+}

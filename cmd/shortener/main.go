@@ -16,7 +16,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/mrhyman/shortner/internal/config"
-	"github.com/mrhyman/shortner/internal/handler"
+	"github.com/mrhyman/shortner/internal/handler/http"
 	"github.com/mrhyman/shortner/internal/logger"
 	"github.com/mrhyman/shortner/internal/repository"
 	"github.com/mrhyman/shortner/internal/repository/storage"
@@ -48,17 +48,23 @@ func main() {
 	svc := service.NewURLService(cfg.BaseURL, repo)
 	h := handler.New(*svc)
 
-	s, cleanup, err := server.New(cfg, *h)
+	httpServer, cleanup, err := server.NewHTTP(cfg, *h)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer cleanup()
+
+	grpcServer, err := server.NewGRPC(cfg, svc)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 	defer stop()
 
 	g, ctx := errgroup.WithContext(ctx)
 
+	// pprof server
 	g.Go(func() error {
 		pprofServer := &http.Server{Addr: ":9090"}
 		fmt.Println("pprof server started on :9090")
@@ -78,8 +84,14 @@ func main() {
 		return nil
 	})
 
+	// HTTP server
 	g.Go(func() error {
-		return s.Start(ctx)
+		return httpServer.Start(ctx)
+	})
+
+	// gRPC server
+	g.Go(func() error {
+		return grpcServer.Start(ctx)
 	})
 
 	logger.Get().Info("Application started")
@@ -93,8 +105,14 @@ func main() {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), config.ShutdownTimeout)
 	defer cancel()
 
-	if err := s.Shutdown(shutdownCtx); err != nil {
-		logger.Get().With("err", err.Error()).Error("Shutdown error")
+	// Shutdown HTTP server
+	if err := httpServer.Shutdown(shutdownCtx); err != nil {
+		logger.Get().With("err", err.Error()).Error("HTTP shutdown error")
+	}
+
+	// Shutdown gRPC server
+	if err := grpcServer.Shutdown(shutdownCtx); err != nil {
+		logger.Get().With("err", err.Error()).Error("gRPC shutdown error")
 	}
 
 	logger.Get().Info("Application stopped")

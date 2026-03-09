@@ -14,9 +14,11 @@ import (
 
 const (
 	DefaultServerAddress   = "localhost:8080"
+	DefaultGRPCAddress     = "localhost:50051"
 	DefaultBaseURL         = "http://localhost:8080"
 	DefaultFileStoragePath = ""
 	DefaultDBDSN           = ""
+	DefaultTrustedSubnet   = "127.0.0.0/8"
 	DefaultHashKey         = "qwerty12345"
 	ShutdownTimeout        = 10 * time.Second
 )
@@ -41,6 +43,8 @@ type AppConfig struct {
 	CertFile      string
 	KeyFile       string
 	StorageMode   StorageMode
+	TrustedSubnet string
+	GRPCAddress   string
 }
 
 var (
@@ -59,15 +63,18 @@ func createFlagSet() *pflag.FlagSet {
 	fs := pflag.NewFlagSet(os.Args[0], pflag.ExitOnError)
 	fs.StringP("config", "c", "", "Path to config file")
 	fs.StringP("server-address", "a", DefaultServerAddress, "HTTP server address, e.g. localhost:8888")
+	fs.StringP("grpc-address", "g", DefaultGRPCAddress, "GRPC server address, e.g. localhost:50051")
 	fs.StringP("base-url", "b", DefaultBaseURL, "Base URL for short links, e.g. http://localhost:8080")
 	fs.StringP("file-storage-path", "f", DefaultFileStoragePath, "Base storage path, e.g. /.storage/db.json")
 	fs.StringP("database-dsn", "d", DefaultDBDSN, "Database connection string. postgres://postgres:postgres@localhost:5432/postgres")
+	fs.StringP("trusted-subnet", "t", DefaultTrustedSubnet, "Trusted subnet (CIDR)")
 	fs.String("hash-key", DefaultHashKey, "Auth hash key. e.g. qwerty12345")
 	fs.String("audit-file", "", "Audit file path. e.g. /var/log/audit.log")
 	fs.String("audit-url", "", "External audit URL. e.g. http://somehost:8080/audit")
 	fs.BoolP("enable-https", "s", false, "Enable HTTPS server")
 	fs.String("cert-file", "certs/server.crt", "Path to certificate file")
 	fs.String("key-file", "certs/server.key", "Path to private key file")
+
 	return fs
 }
 
@@ -83,6 +90,8 @@ func getFlagDefault(flagName string) string {
 		return DefaultDBDSN
 	case "hash-key":
 		return DefaultHashKey
+	case "grpc-address":
+		return DefaultGRPCAddress
 	case "enable-https":
 		return "false"
 	case "cert-file":
@@ -113,6 +122,7 @@ func Load(ctx context.Context) AppConfig {
 
 	// дефолтные значения (самый низкий приоритет)
 	v.SetDefault("server-address", DefaultServerAddress)
+	v.SetDefault("grpc-address", DefaultGRPCAddress)
 	v.SetDefault("base-url", DefaultBaseURL)
 	v.SetDefault("file-storage-path", DefaultFileStoragePath)
 	v.SetDefault("database-dsn", DefaultDBDSN)
@@ -120,6 +130,7 @@ func Load(ctx context.Context) AppConfig {
 	v.SetDefault("enable-https", false)
 	v.SetDefault("cert-file", "certs/server.crt")
 	v.SetDefault("key-file", "certs/server.key")
+	v.SetDefault("trusted-subnet", DefaultTrustedSubnet)
 
 	// конфигурационный файл (приоритет выше дефолтов)
 	configPath := ""
@@ -140,6 +151,9 @@ func Load(ctx context.Context) AppConfig {
 			if v.IsSet("server_address") {
 				v.Set("server-address", v.GetString("server_address"))
 			}
+			if v.IsSet("grpc_address") {
+				v.Set("grpc-address", v.GetString("grpc_address"))
+			}
 			if v.IsSet("base_url") {
 				v.Set("base-url", v.GetString("base_url"))
 			}
@@ -151,6 +165,9 @@ func Load(ctx context.Context) AppConfig {
 			}
 			if v.IsSet("enable_https") {
 				v.Set("enable-https", v.GetBool("enable_https"))
+			}
+			if v.IsSet("trusted-subnet") {
+				v.Set("trusted-subnet", v.GetString("trusted_subnet"))
 			}
 		}
 	}
@@ -176,6 +193,7 @@ func Load(ctx context.Context) AppConfig {
 	// переменные окружения (наивысший приоритет)
 	envMappings := map[string]string{
 		"SERVER_ADDRESS":    "server-address",
+		"GRPC_ADDRESS":      "grpc-address",
 		"BASE_URL":          "base-url",
 		"FILE_STORAGE_PATH": "file-storage-path",
 		"DATABASE_DSN":      "database-dsn",
@@ -197,6 +215,7 @@ func Load(ctx context.Context) AppConfig {
 
 	cfg := AppConfig{
 		ServerAddress: v.GetString("server-address"),
+		GRPCAddress:   v.GetString("grpc-address"),
 		BaseURL:       v.GetString("base-url"),
 		StoragePath:   v.GetString("file-storage-path"),
 		DBDSN:         v.GetString("database-dsn"),
@@ -206,6 +225,7 @@ func Load(ctx context.Context) AppConfig {
 		EnableHTTPS:   v.GetBool("enable-https"),
 		CertFile:      v.GetString("cert-file"),
 		KeyFile:       v.GetString("key-file"),
+		TrustedSubnet: v.GetString("trusted-subnet"),
 	}
 
 	if cfg.StoragePath != "" && !filepath.IsAbs(cfg.StoragePath) {

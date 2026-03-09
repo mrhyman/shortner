@@ -18,9 +18,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mrhyman/shortner/internal/config"
-	"github.com/mrhyman/shortner/internal/handler"
+	handler "github.com/mrhyman/shortner/internal/handler/http"
 	"github.com/mrhyman/shortner/internal/logger"
-	"github.com/mrhyman/shortner/internal/middleware"
+	"github.com/mrhyman/shortner/internal/middleware/http"
 	"github.com/mrhyman/shortner/internal/observer"
 )
 
@@ -29,7 +29,7 @@ type Server struct {
 	Config   config.AppConfig
 }
 
-func New(cfg config.AppConfig, h handler.HTTPHandler) (*Server, func() error, error) {
+func NewHTTP(cfg config.AppConfig, h handler.HTTPHandler) (*Server, func() error, error) {
 	pub, cleanup, err := observer.SetupObservers(cfg)
 	if err != nil {
 		return nil, nil, err
@@ -173,6 +173,9 @@ func SetupMux(h *handler.HTTPHandler, cfg config.AppConfig, pub *observer.Publis
 	// service endpoints
 	r.Get("/ping", middleware.WithLogging(h.PingHandler))
 
+	// internal endpoints with trusted subnet check
+	r.Get("/api/internal/stats", InternalMiddleware(cfg)(h.StatsHandler))
+
 	return r
 }
 
@@ -183,5 +186,14 @@ func DefaultMiddleware(cfg config.AppConfig, pub *observer.Publisher) func(http.
 				middleware.WithLogging(h),
 			),
 		))
+	}
+}
+
+// InternalMiddleware применяет middleware для внутренних эндпоинтов
+func InternalMiddleware(cfg config.AppConfig) func(http.HandlerFunc) http.HandlerFunc {
+	return func(h http.HandlerFunc) http.HandlerFunc {
+		return middleware.WithTrustedSubnet(cfg.TrustedSubnet)(
+			middleware.WithLogging(h),
+		)
 	}
 }
